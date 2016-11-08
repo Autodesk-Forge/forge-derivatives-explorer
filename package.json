@@ -1,0 +1,33 @@
+{
+  "name": "derivative-service-node.js-sample",
+  "version": "1.0.0",
+  "description": "A sample that shows how to use the Model Derivative API.",
+
+  "dependencies": {
+    "body-parser": "^1.15.1",
+    "cookie-parser": "^1.4.3",
+    "ejs": "^2.4.1",
+    "express": "^4.13.4",
+    "express-session": "^1.13.0",
+    "formidable": "^1.0.17",
+    "morgan": "^1.7.0",
+    "oauth": "^0.9.14",
+    "request": "^2.72.0",
+    "trim": "0.0.1",
+    "forge-data-management": "*",
+    "forge-model-derivative": "*",
+    "forge-oauth2": "*",
+    "forge-oss": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/developer-autodesk/model.derivative-nodejs-sample"
+  },
+  "scripts": {
+    "start" : "NODE_ENV=production node start.js",
+    "dev": "node start.js",
+    "nodemon": "nodemon start.js --ignore www/"
+  },
+  "author": "Forge Partner Development",
+  "license": "MIT"
+}
