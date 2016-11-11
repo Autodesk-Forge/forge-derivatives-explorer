@@ -599,8 +599,10 @@ function prepareFilesTree() {
             MyVars.fileExtType = data.node.original.fileExtType;
 
             if ($('#wipVsStorage').hasClass('active')) {
+                console.log("Using WIP id");
                 MyVars.selectedUrn = base64encode(data.node.original.wipid);
             } else {
+                console.log("Using Storage id");
                 MyVars.selectedUrn = base64encode(data.node.original.storage);
             }
 
