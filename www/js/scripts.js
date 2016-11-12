@@ -818,7 +818,11 @@ function prepareHierarchyTree(urn, guid, json) {
                 'icon': 'glyphicon glyphicon-save-file'
             }
         },
-        "plugins": ["types", "sort", "checkbox", "ui", "themes"]
+        "plugins": ["types", "sort", "checkbox", "ui", "themes", "contextmenu"],
+        'contextmenu': {
+            'select_node': false,
+            'items': hierarchyTreeContextMenu
+        }
     }).bind("select_node.jstree", function (evt, data) {
         if (data.node.type === 'object') {
             var urn = MyVars.selectedUrn;
@@ -872,6 +876,29 @@ function selectInHierarchyTree(objectIds) {
     }
 
     MyVars.selectingInHierarchyTree = false;
+}
+
+function hierarchyTreeContextMenu(node, callback) {
+    var menuItems = {};
+
+    var menuItem = {
+        "label": "Select in Fusion",
+        "action": function (obj) {
+            var path = $("#forgeHierarchy").jstree().get_path(node,'/');
+            alert(path);
+
+            // Open this in the browser:
+            // fusion360://command=open&file=something&properties=MyCustomPropertyValues
+            var url = "fusion360://command=open&file=something&properties=" + encodeURIComponent(path);
+            $("#fusionLoader").attr("src", url);
+        }
+    };
+    menuItems[0] = menuItem;
+
+    //callback(menuItems);
+
+    //return menuItems;
+    return null; // for the time being
 }
 
 /////////////////////////////////////////////////////////////////
