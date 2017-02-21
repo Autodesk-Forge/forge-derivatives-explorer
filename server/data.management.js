@@ -17,7 +17,7 @@ var fs = require('fs');
 var config = require('./config');
 
 var forgeDM = require('forge-data-management');
-var forgeOSS = require('forge-oss');
+
 var request = require('request');
 
 function setToken(forge, req, res) {

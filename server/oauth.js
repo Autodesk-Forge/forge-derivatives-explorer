@@ -62,7 +62,11 @@ router.get('/user/token', function (req, res) {
     console.log('Getting user token'); // debug
     var tokenSession = new token(req.session);
     console.log('Public token:' + tokenSession.getTokenPublic());
-    res.json({ token: tokenSession.getTokenPublic(), expires_in: tokenSession.getExpiresInPublic() });
+    // json returns empty object if the entry values are undefined
+    // so let's avoid that
+    var tp = tokenSession.getTokenPublic() || "";
+    var te = tokenSession.getExpiresInPublic() || "";
+    res.json({ token: tp, expires_in: te });
 });
 
 // return the forge authenticate url
