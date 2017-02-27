@@ -16,38 +16,24 @@ var fs = require('fs');
 
 var config = require('./config');
 
-var forgeDM = require('forge-data-management');
+var forgeSDK = require('forge-apis');
 
-var request = require('request');
-
-function setToken(forge, req, res) {
-    var tokenSession = new token(req.session);
-    forge.ApiClient.instance.authentications ['oauth2_access_code'].accessToken =
-        tokenSession.getTokenInternal();
-    forge.ApiClient.instance.authentications ['oauth2_application'].accessToken =
-        tokenSession.getTokenInternal();
-
-    if (!tokenSession.isAuthorized()) {
-        res.status(401).json({error: 'Please login first'});
-        return null;
-    }
-
-    return forge;
-}
-
-function getFolderId(projectId, versionId) {
+function getFolderId(projectId, versionId, req) {
     return new Promise(function (_resolve, _reject) {
         // Figure out the itemId of the file we want to attach the new file to
-        var versions = new forgeDM.VersionsApi();
-        versions.getVersion(projectId, versionId)
+        var tokenSession = new token(req.session);
+
+        var versions = new forgeSDK.VersionsApi();
+
+        versions.getVersion(projectId, versionId, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function (versionData) {
-                var itemId = versionData.data.relationships.item.data.id;
+                var itemId = versionData.body.data.relationships.item.data.id;
 
                 // Figure out the folderId of the file we want to attach the new file to
-                var items = new forgeDM.ItemsApi();
-                items.getItem(projectId, itemId)
+                var items = new forgeSDK.ItemsApi();
+                items.getItem(projectId, itemId, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (itemData) {
-                        var folderId = itemData.data.relationships.parent.data.id;
+                        var folderId = itemData.body.data.relationships.parent.data.id;
 
                         _resolve(folderId);
                     })
@@ -63,22 +49,25 @@ function getFolderId(projectId, versionId) {
     });
 }
 
-function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath) {
+function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath, req) {
     return new Promise(function (_resolve, _reject) {
         // Ask for storage for the new file we want to upload
-        var projects = new forgeDM.ProjectsApi();
-        projects.postStorage(projectId, JSON.stringify(storageSpecData(fileName, folderId)))
+        var tokenSession = new token(req.session);
+
+        var projects = new forgeSDK.ProjectsApi();
+        var body = JSON.stringify(storageSpecData(fileName, folderId));
+        projects.postStorage(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function (storageData) {
-                var objectId = storageData.data.id;
+                var objectId = storageData.body.data.id;
                 var bucketKeyObjectName = getBucketKeyObjectName(objectId);
 
                 fs.readFile(fileTempPath, function (err, fileData) {
                     // Upload the new file
-                    var objects = new forgeOSS.ObjectsApi();
-                    objects.uploadObject(bucketKeyObjectName.bucketKey, bucketKeyObjectName.objectName, fileSize, fileData)
+                    var objects = new forgeSDK.ObjectsApi();
+                    objects.uploadObject(bucketKeyObjectName.bucketKey, bucketKeyObjectName.objectName, fileSize, fileData, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (objectData) {
                             console.log('uploadObject: succeeded');
-                            _resolve(objectData.objectId);
+                            _resolve(objectData.body.objectId);
                         })
                         .catch(function (error) {
                             console.log('uploadObject: failed');
@@ -92,16 +81,17 @@ function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath) {
     });
 }
 
-function createNewItemVersion(projectId, folderId, fileName, objectId) {
+function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
     return new Promise(function (_resolve, _reject) {
 
-        var folders = new forgeDM.FoldersApi();
+        var tokenSession = new token(req.session);
 
-        folders.getFolderContents(projectId, folderId)
+        var folders = new forgeSDK.FoldersApi();
+        folders.getFolderContents(projectId, folderId, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function (folderData) {
                 var item = null;
-                for (var key in folderData.data) {
-                    item = folderData.data[key];
+                for (var key in folderData.body.data) {
+                    item = folderData.body.data[key];
                     if (item.attributes.displayName === fileName) {
                         break;
                     } else {
@@ -109,14 +99,13 @@ function createNewItemVersion(projectId, folderId, fileName, objectId) {
                     }
                 }
 
-                var projects = new forgeDM.ProjectsApi();
-
                 if (item) {
                     // We found it so we should create a new version
-
-                    projects.postVersion(projectId, JSON.stringify(versionSpecData(fileName, item.id, objectId)))
+                    var versions = new forgeSDK.VersionsApi();
+                    var body = JSON.stringify(versionSpecData(fileName, item.id, objectId));
+                    versions.postVersion(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (versionData) {
-                            _resolve(versionData.data.id);
+                            _resolve(versionData.body.data.id);
                         })
                         .catch(function (error) {
                             console.log('postVersion: failed');
@@ -125,11 +114,12 @@ function createNewItemVersion(projectId, folderId, fileName, objectId) {
                         });
                 } else {
                     // We did not find it so we should create it
-
-                    projects.postItem(projectId, JSON.stringify(itemSpecData(fileName, folderId, objectId)))
+                    var items = new forgeSDK.ItemsApi();
+                    var body = JSON.stringify(itemSpecData(fileName, folderId, objectId));
+                    items.postItem(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (itemData) {
                             // Get the versionId out of the reply
-                            _resolve(itemData.included[0].id);
+                            _resolve(itemData.body.included[0].id);
                         })
                         .catch(function (error) {
                             console.log('postItem: failed');
@@ -145,11 +135,14 @@ function createNewItemVersion(projectId, folderId, fileName, objectId) {
     });
 }
 
-function attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId) {
+function attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId, req) {
     return new Promise(function (_resolve, _reject) {
+        var tokenSession = new token(req.session);
+
         // Ask for storage for the new file we want to upload
-        var versions = new forgeDM.VersionsApi();
-        versions.postVersionRelationshipsRef(projectId, versionId, JSON.stringify(attachmentSpecData(attachmentVersionId)))
+        var versions = new forgeSDK.VersionsApi();
+        var body = JSON.stringify(attachmentSpecData(attachmentVersionId));
+        versions.postVersionRelationshipsRef(projectId, versionId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function () {
                 _resolve();
             })
@@ -161,28 +154,28 @@ function attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId
 }
 
 router.get('/attachments', function (req, res) {
-    if (!setToken(forgeDM, req, res))
-        return;
+
+    var tokenSession = new token(req.session);
 
     var href = decodeURIComponent(req.query.href);
     var params = href.split('/');
     var projectId = params[params.length - 3];
     var versionId = params[params.length - 1];
 
-    var versions = new forgeDM.VersionsApi();
-    versions.getVersionRelationshipsRefs(projectId, versionId)
+    var versions = new forgeSDK.VersionsApi();
+    versions.getVersionRelationshipsRefs(projectId, versionId, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
         .then(function (relationshipsData) {
             var versionRequests = [];
-            for (var key in relationshipsData.data) {
-                var item = relationshipsData.data[key];
+            for (var key in relationshipsData.body.data) {
+                var item = relationshipsData.body.data[key];
                 if (item.meta.extension.type === "auxiliary:autodesk.core:Attachment") {
                     (function (relationshipItem) {
                         var versionRequest = new Promise(function (_resolve, _reject) {
-                            versions.getVersion(projectId, relationshipItem.id)
+                            versions.getVersion(projectId, relationshipItem.id, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                                 .then(function (versionData) {
                                     relationshipItem.displayName =
-                                        versionData.data.attributes.displayName +
-                                        " (v" + versionData.data.attributes.versionNumber + ")";
+                                        versionData.body.data.attributes.displayName +
+                                        " (v" + versionData.body.data.attributes.versionNumber + ")";
                                     _resolve();
                                 })
                                 .catch(function (error) {
@@ -197,7 +190,7 @@ router.get('/attachments', function (req, res) {
 
             Promise.all(versionRequests)
                 .then(function () {
-                    res.json(relationshipsData);
+                    res.json(relationshipsData.body);
                 })
                 .catch(function (error) {
                     console.log('Parallel getVersion: failed');
@@ -212,8 +205,8 @@ router.get('/attachments', function (req, res) {
 
 // Download a specific attachment of an item version
 router.get('/attachments/:attachment', function (req, res) {
-    if (!setToken(forgeDM, req, res) || !setToken(forgeOSS, req, res))
-        return;
+
+    var tokenSession = new token(req.session);
 
     // From the href of the item version that has the attachment
     // we only need the projectId
@@ -222,58 +215,27 @@ router.get('/attachments/:attachment', function (req, res) {
     var params = href.split('/');
     var projectId = params[params.length - 3];
 
-    //var versionId = params[params.length - 1];
-
-    var versions = new forgeDM.VersionsApi();
+    var versions = new forgeSDK.VersionsApi();
 
     // Get version info first to find out the OSS location
-    versions.getVersion(projectId, req.params.attachment)
+    versions.getVersion(projectId, req.params.attachment, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
         .then(function (versionData) {
-            var storageId = versionData.data.relationships.storage.data.id;
-            var storageHref = versionData.data.relationships.storage.meta.link.href;
-            var fileExt = versionData.data.attributes.fileType;
+            var storageId = versionData.body.data.relationships.storage.data.id;
+            var storageHref = versionData.body.data.relationships.storage.meta.link.href;
+            var fileExt = versionData.body.data.attributes.fileType;
             var bucketKeyObjectName = getBucketKeyObjectName(storageId);
 
-            /*
-            var objects = new forgeOSS.ObjectsApi();
-            objects.getObject(bucketKeyObjectName.bucketKey, bucketKeyObjectName.objectName)
+            var objects = new forgeSDK.ObjectsApi();
+            objects.getObject(bucketKeyObjectName.bucketKey, bucketKeyObjectName.objectName, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                 .then(function (data) {
-                    res.set('content-type', 'application/' + fileExt);
-                    res.set('Content-Disposition', 'attachment; filename="' + versionData.data.attributes.displayName + '"');
-                    res.end(data);
+                     res.set('content-type', 'application/' + fileExt);
+                     res.set('Content-Disposition', 'attachment; filename="' + versionData.body.data.attributes.displayName + '"');
+                     res.end(data.body);
                 })
                 .catch(function (error) {
                     console.log('getObject: failed');
                     res.status(error.statusCode).end('getObject: failed');
                 })
-
-             The below workaround is needed because the "encoding = null" is not added to the request
-                in the /forge-oss/src/ApiClient.js file's exports.prototype.callApi function
-             */
-            var tokenSession = new token(req.session);
-            request({
-                url: "https://developer.api.autodesk.com/oss/v2/buckets/" +
-                    encodeURIComponent(bucketKeyObjectName.bucketKey) +
-                    "/objects/" +
-                    encodeURIComponent(bucketKeyObjectName.objectName),
-                encoding: null,
-                method: "GET",
-                headers: {'Authorization': 'Bearer ' + tokenSession.getTokenInternal()}
-            }, function (error, response, body) {
-                if (error != null) {
-                    console.log(error); // connection problems
-
-                    if (body.errors != null)
-                        console.log(body.errors);
-
-                    res.status(error.statusCode).end(error.statusMessage);
-                    return;
-                }
-
-                res.set('content-type', 'application/' + fileExt);
-                res.set('Content-Disposition', 'attachment; filename="' + versionData.data.attributes.displayName + '"');
-                res.end(body);
-            })
         })
         .catch(function (error) {
             console.log('getVersion: failed');
@@ -284,29 +246,25 @@ router.get('/attachments/:attachment', function (req, res) {
 // Delete the specific attachment relationship between two item versions
 router.delete('/attachments/:attachment', function (req, res) {
 
-    if (!setToken(forgeDM, req, res))
-        return;
+    var tokenSession = new token(req.session);
 
     var href = decodeURIComponent(req.header('wip-href'));
     var params = href.split('/');
     var projectId = params[params.length - 3];
     var versionId = params[params.length - 1];
 
-
-    var derivatives = getForgeMD(req, res);
+    var derivatives = new forgeSDK.DerivativesApi();
     if (!derivatives)
         return;
 
-    derivatives.deleteManifest(req.params.attachment)
+    derivatives.deleteManifest(req.params.attachment, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
         .then(function (data) {
-            res.json(data);
+            res.json(data.body);
         })
         .catch(function (error) {
             res.status(error.statusCode).end(error.statusMessage);
         });
 });
-
-
 
 router.post('/files', jsonParser, function (req, res) {
     // Uploading a file to A360
@@ -316,11 +274,6 @@ router.post('/files', jsonParser, function (req, res) {
 
     var fileName = '';
     var form = new formidable.IncomingForm();
-
-    // The two helper we are using are
-    // forgeDM & forgeOSS
-    if (!setToken(forgeDM, req, res) || !setToken(forgeOSS, req, res))
-        return;
 
     // Find out the project where we have to upload the file
     var href = decodeURIComponent(req.header('wip-href'));
@@ -354,14 +307,14 @@ router.post('/files', jsonParser, function (req, res) {
             // Create file on A360
 
             // Get the folder where the selected item is
-            getFolderId(projectId, versionId)
+            getFolderId(projectId, versionId, req)
                 .then(function (folderId) {
                     // projectId, folderId, fileName, fileSize, fileTempPath
-                    uploadFile(projectId, folderId, uploadedFile.name, uploadedFile.size, uploadedFile.path)
+                    uploadFile(projectId, folderId, uploadedFile.name, uploadedFile.size, uploadedFile.path, req)
                         .then(function (objectId) {
-                            createNewItemVersion(projectId, folderId, uploadedFile.name, objectId)
+                            createNewItemVersion(projectId, folderId, uploadedFile.name, objectId, req)
                                 .then(function (attachmentVersionId) {
-                                    attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId)
+                                    attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId, req)
                                         .then(function () {
                                             res.status(200).json({fileName: uploadedFile.name, objectId: objectId});
                                         })
@@ -371,8 +324,8 @@ router.post('/files', jsonParser, function (req, res) {
                                         });
                                 })
                                 .catch(function (error) {
-                                    console.log('createNewItemVersionInFolder: failed');
-                                    res.status(error.statusCode).end('createNewItemVersionInFolder: failed');
+                                    console.log('createNewItemVersion: failed');
+                                    res.status(error.statusCode).end('createNewItemVersion: failed');
                                 });
                         })
                         .catch(function (error) {
@@ -430,15 +383,16 @@ function storageSpecData(fileName, folderId) {
     return storageSpecs;
 }
 
+// added included >> attributes >> extension on 2017-02-22
 function itemSpecData(fileName, folderId, objectId) {
     var itemSpec = {
         jsonapi: {
             version: "1.0"
         },
-        data: [{
+        data: {
             type: "items",
             attributes: {
-                name: fileName,
+                displayName: fileName,
                 extension: {
                     type: "items:autodesk.core:File",
                     version: "1.0"
@@ -458,12 +412,16 @@ function itemSpecData(fileName, folderId, objectId) {
                     }
                 }
             }
-        }],
+        },
         included: [{
             type: "versions",
             id: "1",
             attributes: {
-                name: fileName
+                name: fileName,
+                extension: {
+                    type: "versions:autodesk.core:File",
+                    version: "1.0"
+                }
             },
             relationships: {
                 storage: {
@@ -475,7 +433,6 @@ function itemSpecData(fileName, folderId, objectId) {
             }
         }]
     };
-
 
     if (fileName.endsWith(".iam.zip")) {
         itemSpec.data[0].attributes.extension.type = "versions:autodesk.a360:CompositeDesign";
@@ -559,16 +516,15 @@ router.get('/treeNode', function (req, res) {
     var href = decodeURIComponent(req.query.href);
     console.log("treeNode for " + href);
 
-    if (!setToken(forgeDM, req, res))
-        return;
+    var tokenSession = new token(req.session);
 
     if (href === '#') {
         // # stands for ROOT
-        var hubs = new forgeDM.HubsApi();
-        hubs.getHubs()
+        var hubs = new forgeSDK.HubsApi();
+
+        hubs.getHubs({}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function (data) {
-                //res.end(makeTree(data.data, true));
-                res.json(makeTree(data.data, true));
+                res.json(makeTree(data.body.data, true));
             })
             .catch(function (error) {
                 console.log(error);
@@ -580,11 +536,11 @@ router.get('/treeNode', function (req, res) {
         switch (resourceName) {
             case 'hubs':
                 // if the caller is a hub, then show projects
-                var hubs = new forgeDM.HubsApi();
-                hubs.getHubProjects(resourceId/*hub_id*/)
+                var projects = new forgeSDK.ProjectsApi();
+
+                projects.getHubProjects(resourceId/*hub_id*/, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (projects) {
-                        //res.end(makeTree(projects.data, true));
-                        res.json(makeTree(projects.data, true));
+                        res.json(makeTree(projects.body.data, true));
                     })
                     .catch(function (error) {
                         console.log(error);
@@ -593,15 +549,14 @@ router.get('/treeNode', function (req, res) {
             case 'projects':
                 // if the caller is a project, then show folders
                 var hubId = params[params.length - 3];
-                var projects = new forgeDM.ProjectsApi();
-                projects.getProject(hubId, resourceId/*project_id*/)
+                var projects = new forgeSDK.ProjectsApi();
+                projects.getProject(hubId, resourceId/*project_id*/, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (project) {
-                        var rootFolderId = project.data.relationships.rootFolder.data.id;
-                        var folders = new forgeDM.FoldersApi();
-                        folders.getFolderContents(resourceId, rootFolderId)
+                        var rootFolderId = project.body.data.relationships.rootFolder.data.id;
+                        var folders = new forgeSDK.FoldersApi();
+                        folders.getFolderContents(resourceId, rootFolderId, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                             .then(function (folderContents) {
-                                //res.end(makeTree(folderContents.data, true));
-                                res.json(makeTree(folderContents.data, true));
+                                res.json(makeTree(folderContents.body.data, true));
                             })
                             .catch(function (error) {
                                 console.log(error);
@@ -614,11 +569,10 @@ router.get('/treeNode', function (req, res) {
             case 'folders':
                 // if the caller is a folder, then show contents
                 var projectId = params[params.length - 3];
-                var folders = new forgeDM.FoldersApi();
-                folders.getFolderContents(projectId, resourceId/*folder_id*/)
+                var folders = new forgeSDK.FoldersApi();
+                folders.getFolderContents(projectId, resourceId/*folder_id*/, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (folderContents) {
-                        //res.end(makeTree(folderContents.data, true));
-                        res.json(makeTree(folderContents.data, true));
+                        res.json(makeTree(folderContents.body.data, true));
                     })
                     .catch(function (error) {
                         console.log(error);
@@ -627,11 +581,10 @@ router.get('/treeNode', function (req, res) {
             case 'items':
                 // if the caller is an item, then show versions
                 var projectId = params[params.length - 3];
-                var items = new forgeDM.ItemsApi();
-                items.getItemVersions(projectId, resourceId/*item_id*/)
+                var items = new forgeSDK.ItemsApi();
+                items.getItemVersions(projectId, resourceId/*item_id*/, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (versions) {
-                        //res.end(makeTree(versions.data, false));
-                        res.json(makeTree(versions.data, false));
+                        res.json(makeTree(versions.body.data, false));
                     })
                     .catch(function (error) {
                         console.log(error);
@@ -678,7 +631,6 @@ function makeTree(items, canHaveChildren, data) {
         treeList.push(treeItem);
     });
 
-    //return JSON.stringify(treeList);
     return treeList;
 }
 

@@ -14,9 +14,7 @@
     "oauth": "^0.9.14",
     "request": "^2.72.0",
     "trim": "0.0.1",
-    "forge-data-management": "2.0.5",
-    "forge-model-derivative": "2.0.4",
-    "forge-oauth2": "1.0.4"
+    "forge-apis": "*"
   },
   "repository": {
     "type": "git",
