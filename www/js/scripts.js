@@ -1006,11 +1006,11 @@ function initializeViewer(urn) {
     console.log("Launching Autodesk Viewer for: " + urn);
 
     var options = {
-        'document': 'urn:' + urn,
-        'env': 'AutodeskProduction',
+        document: 'urn:' + urn,
+        env: 'AutodeskProduction',
         extensions: ['Autodesk.Viewing.WebVR'],
         experimental: ['webVR_orbitModel'],
-        'getAccessToken': get3LegToken // this works fine, but if I pass get3LegToken it only works the first time
+        getAccessToken: get3LegToken // this works fine, but if I pass get3LegToken it only works the first time
     };
 
     if (MyVars.viewer) {
@@ -1045,8 +1045,12 @@ function addSelectionListener(viewer) {
 }
 
 function loadDocument(viewer, documentId) {
-    //Autodesk.Viewing.HTTP_REQUEST_HEADERS['x-ads-acm-namespace'] = 'WIPDM';
-    //Autodesk.Viewing.HTTP_REQUEST_HEADERS['x-ads-acm-check-groups'] = 'true';
+    // Set the Environment to "Riverbank"
+    viewer.setLightPreset(8);
+
+    // Make sure that the loaded document's setting won't
+    // override it and change it to something else
+    viewer.prefs.tag('ignore-producer');
 
     Autodesk.Viewing.Document.load(
         documentId,
