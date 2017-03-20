@@ -474,6 +474,11 @@ function fillFormats() {
                             derUrns[0] = encodeURIComponent(derUrns[0]);
 
                             downloadDerivative(urn, derUrns[0], fileName);
+
+                            // in case of obj format, also try to download the material
+                            if (format === 'obj') {
+                                downloadDerivative(urn, derUrns[0].replace('.obj' , '.mtl'), fileName.replace('.obj', '.mtl'));
+                            }
                         } else {
                             showProgress("Could not find specific OBJ file", "failed");
                             console.log("askForFileType, Did not find the OBJ translation with the correct list of objectIds");
@@ -1008,8 +1013,6 @@ function initializeViewer(urn) {
     var options = {
         document: 'urn:' + urn,
         env: 'AutodeskProduction',
-        extensions: ['Autodesk.Viewing.WebVR'],
-        experimental: ['webVR_orbitModel'],
         getAccessToken: get3LegToken // this works fine, but if I pass get3LegToken it only works the first time
     };
 
@@ -1017,7 +1020,11 @@ function initializeViewer(urn) {
         loadDocument(MyVars.viewer, options.document);
     } else {
         var viewerElement = document.getElementById('forgeViewer');
-        MyVars.viewer = new Autodesk.Viewing.Private.GuiViewer3D(viewerElement, {});
+        var config = {
+            extensions: ['Autodesk.Viewing.WebVR'],
+            experimental: ['webVR_orbitModel']
+        };
+        MyVars.viewer = new Autodesk.Viewing.Private.GuiViewer3D(viewerElement, config);
         Autodesk.Viewing.Initializer(
             options,
             function () {
