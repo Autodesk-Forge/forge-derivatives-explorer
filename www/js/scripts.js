@@ -1021,7 +1021,7 @@ function initializeViewer(urn) {
     } else {
         var viewerElement = document.getElementById('forgeViewer');
         var config = {
-            extensions: ['Autodesk.Viewing.webVR'],
+            extensions: ['Autodesk.Viewing.webVR', 'Autodesk.Viewing.MarkupsGui'],
             experimental: ['webVR_orbitModel']
         };
         MyVars.viewer = new Autodesk.Viewing.Private.GuiViewer3D(viewerElement, config);
