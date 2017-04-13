@@ -549,8 +549,13 @@ router.get('/treeNode', function (req, res) {
             case 'projects':
                 // if the caller is a project, then show folders
                 var hubId = params[params.length - 3];
+
                 var projects = new forgeSDK.ProjectsApi();
-                projects.getProject(hubId, resourceId/*project_id*/, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+
+                // resourceId contains project_id
+
+              /*
+                projects.getProject(hubId, resourceId, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (project) {
                         var rootFolderId = project.body.data.relationships.rootFolder.data.id;
                         var folders = new forgeSDK.FoldersApi();
@@ -561,10 +566,26 @@ router.get('/treeNode', function (req, res) {
                             .catch(function (error) {
                                 console.log(error);
                             });
+
+
+
                     })
                     .catch(function (error) {
                         console.log(error);
                     });
+
+              */
+
+                // Work with top folders instead
+                var projects = new forgeSDK.ProjectsApi();
+                projects.getProjectTopFolders(hubId, resourceId, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+                  .then(function (topFolders) {
+                      res.json(makeTree(topFolders.body.data, true));
+                  })
+                  .catch(function (error) {
+                      console.log(error);
+                  });
+
                 break;
             case 'folders':
                 // if the caller is a folder, then show contents
