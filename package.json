@@ -1,6 +1,6 @@
 {
   "name": "derivative-service-node.js-sample",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A sample that shows how to use the Model Derivative API.",
 
   "dependencies": {

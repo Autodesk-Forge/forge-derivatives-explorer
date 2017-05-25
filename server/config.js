@@ -35,5 +35,5 @@ module.exports = {
         'bucket:create', 'bucket:read', 'bucket:update', 'bucket:delete'
     ],
     // Required scope of the token sent to the client
-    scopePublic: ['data:read']
+    scopePublic: ['viewables:read']
 };
