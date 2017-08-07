@@ -310,6 +310,9 @@ router.post('/files', jsonParser, function (req, res) {
             getFolderId(projectId, versionId, req)
                 .then(function (folderId) {
                     // projectId, folderId, fileName, fileSize, fileTempPath
+                    console.log('uploadFile.size: ' + uploadedFile.size);
+                    console.log('uploadFile.name: ' + uploadedFile.name);
+                    console.log('uploadFile.path: ' + uploadedFile.path);
                     uploadFile(projectId, folderId, uploadedFile.name, uploadedFile.size, uploadedFile.path, req)
                         .then(function (objectId) {
                             createNewItemVersion(projectId, folderId, uploadedFile.name, objectId, req)
