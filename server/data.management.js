@@ -76,6 +76,7 @@ function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath, req) 
                 });
             })
             .catch(function(error) {
+                console.log('postStorage: failed');
                 _reject(error);
             });
     });
@@ -102,7 +103,7 @@ function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
                 if (item) {
                     // We found it so we should create a new version
                     var versions = new forgeSDK.VersionsApi();
-                    var body = JSON.stringify(versionSpecData(fileName, item.id, objectId));
+                    var body = JSON.stringify(versionSpecData(fileName, projectId, item.id, objectId));
                     versions.postVersion(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (versionData) {
                             _resolve(versionData.body.data.id);
@@ -115,7 +116,7 @@ function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
                 } else {
                     // We did not find it so we should create it
                     var items = new forgeSDK.ItemsApi();
-                    var body = JSON.stringify(itemSpecData(fileName, folderId, objectId));
+                    var body = JSON.stringify(itemSpecData(fileName, projectId, folderId, objectId));
                     items.postItem(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (itemData) {
                             // Get the versionId out of the reply
@@ -387,7 +388,9 @@ function storageSpecData(fileName, folderId) {
 }
 
 // added included >> attributes >> extension on 2017-02-22
-function itemSpecData(fileName, folderId, objectId) {
+function itemSpecData(fileName, projectId, folderId, objectId) {
+    var itemsType = projectId.startsWith("a.") ? "items:autodesk.core:File" : "items:autodesk.bim360:File";
+    var versionsType = projectId.startsWith("a.") ? "versions:autodesk.core:File" : "versions:autodesk.bim360:File";
     var itemSpec = {
         jsonapi: {
             version: "1.0"
@@ -397,7 +400,7 @@ function itemSpecData(fileName, folderId, objectId) {
             attributes: {
                 displayName: fileName,
                 extension: {
-                    type: "items:autodesk.core:File",
+                    type: itemsType,
                     version: "1.0"
                 }
             },
@@ -422,7 +425,7 @@ function itemSpecData(fileName, folderId, objectId) {
             attributes: {
                 name: fileName,
                 extension: {
-                    type: "versions:autodesk.core:File",
+                    type: versionsType,
                     version: "1.0"
                 }
             },
@@ -448,7 +451,9 @@ function itemSpecData(fileName, folderId, objectId) {
     return itemSpec;
 }
 
-function versionSpecData(fileName, itemId, objectId) {
+function versionSpecData(fileName, projectId, itemId, objectId) {
+    var versionsType = projectId.startsWith("a.") ? "versions:autodesk.core:File" : "versions:autodesk.bim360:File";
+
     var versionSpec = {
         "jsonapi": {
             "version": "1.0"
@@ -458,7 +463,7 @@ function versionSpecData(fileName, itemId, objectId) {
             "attributes": {
                 "name": fileName,
                 "extension": {
-                    "type": "versions:autodesk.core:File",
+                    "type": versionsType,
                     "version": "1.0"
                 }
             },
