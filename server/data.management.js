@@ -55,7 +55,7 @@ function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath, req) 
         var tokenSession = new token(req.session);
 
         var projects = new forgeSDK.ProjectsApi();
-        var body = JSON.stringify(storageSpecData(fileName, folderId));
+        var body = storageSpecData(fileName, folderId);
         projects.postStorage(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function (storageData) {
                 var objectId = storageData.body.data.id;
@@ -103,7 +103,7 @@ function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
                 if (item) {
                     // We found it so we should create a new version
                     var versions = new forgeSDK.VersionsApi();
-                    var body = JSON.stringify(versionSpecData(fileName, projectId, item.id, objectId));
+                    var body = versionSpecData(fileName, projectId, item.id, objectId);
                     versions.postVersion(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (versionData) {
                             _resolve(versionData.body.data.id);
@@ -116,7 +116,7 @@ function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
                 } else {
                     // We did not find it so we should create it
                     var items = new forgeSDK.ItemsApi();
-                    var body = JSON.stringify(itemSpecData(fileName, projectId, folderId, objectId));
+                    var body = itemSpecData(fileName, projectId, folderId, objectId);
                     items.postItem(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (itemData) {
                             // Get the versionId out of the reply
@@ -366,6 +366,9 @@ function getBucketKeyObjectName(objectId) {
 
 function storageSpecData(fileName, folderId) {
     var storageSpecs = {
+        jsonapi: {
+            version: "1.0"
+        },
         data: {
             type: 'objects',
             attributes: {

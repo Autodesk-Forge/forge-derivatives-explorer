@@ -13,8 +13,8 @@
     "morgan": "^1.7.0",
     "oauth": "^0.9.14",
     "request": "^2.72.0",
-    "trim": "0.0.1",
-    "forge-apis": "*"
+    "trim": "^0.0.1",
+    "forge-apis": "^0.4.1"
   },
   "repository": {
     "type": "git",
