@@ -142,7 +142,7 @@ function attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId
 
         // Ask for storage for the new file we want to upload
         var versions = new forgeSDK.VersionsApi();
-        var body = JSON.stringify(attachmentSpecData(attachmentVersionId));
+        var body = attachmentSpecData(attachmentVersionId);
         versions.postVersionRelationshipsRef(projectId, versionId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function () {
                 _resolve();
