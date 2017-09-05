@@ -477,7 +477,14 @@ function fillFormats() {
 
                             // in case of obj format, also try to download the material
                             if (format === 'obj') {
-                                downloadDerivative(urn, derUrns[0].replace('.obj' , '.mtl'), fileName.replace('.obj', '.mtl'));
+                                // The MTL file needs to have the exact name that it has on OSS
+                                // because that's how it's referenced from the OBJ file
+                                var ossName = decodeURIComponent(derUrns[0]);
+                                var ossNameParts = ossName.split("/");
+                                // Get the last element
+                                ossName = ossNameParts[ossNameParts.length - 1];
+
+                                downloadDerivative(urn, derUrns[0].replace('.obj' , '.mtl'), ossName.replace('.obj', '.mtl'));
                             }
                         } else {
                             showProgress("Could not find specific OBJ file", "failed");
