@@ -142,7 +142,7 @@ function attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId
 
         // Ask for storage for the new file we want to upload
         var versions = new forgeSDK.VersionsApi();
-        var body = attachmentSpecData(attachmentVersionId);
+        var body = attachmentSpecData(attachmentVersionId, projectId);
         versions.postVersionRelationshipsRef(projectId, versionId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function () {
                 _resolve();
@@ -497,7 +497,8 @@ function versionSpecData(fileName, projectId, itemId, objectId) {
     return versionSpec;
 }
 
-function attachmentSpecData(versionId) {
+function attachmentSpecData(versionId, projectId) {
+    var extensionType = projectId.startsWith("a.") ? "auxiliary:autodesk.core:Attachment" : "derived:autodesk.bim360:FileToDocument";
 
     var attachmentSpec = {
         "jsonapi": {
@@ -508,7 +509,7 @@ function attachmentSpecData(versionId) {
             "id": versionId,
             "meta": {
                 "extension": {
-                    "type": "auxiliary:autodesk.core:Attachment",
+                    "type": extensionType,
                     "version": "1.0"
                 }
             }
