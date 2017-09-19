@@ -565,7 +565,7 @@ function prepareFilesTree() {
                         $("#provisionAccountModal").modal();
                         $("#provisionAccountSave").click(function () {
                             $('#provisionAccountModal').modal('toggle');
-                            $('#autodeskTree').jstree(true).refresh();
+                            $('#forgeFiles').jstree(true).refresh();
                         });
                         haveBIM360Hub = true;
                     }
