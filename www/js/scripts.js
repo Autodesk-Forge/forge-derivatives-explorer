@@ -535,8 +535,14 @@ function updateFormats(format) {
 // the logged in user
 /////////////////////////////////////////////////////////////////
 
+var haveBIM360Hub = false;
+
 function prepareFilesTree() {
     console.log("prepareFilesTree");
+    $.getJSON("/api/forge/clientID", function (res) {
+        $("#ClientID").val(res.ForgeClientId);
+    });
+
     $('#forgeFiles').jstree({
         'core': {
             'themes': {"icons": true},
@@ -548,6 +554,21 @@ function prepareFilesTree() {
                     return {
                         "href": (node.id === '#' ? '#' : node.original.href)
                     };
+                },
+                "success": function (nodes) {
+                    nodes.forEach(function (n) {
+                        if (n.type === 'hubs' && n.href.indexOf('b.') > 0)
+                            haveBIM360Hub = true;
+                    });
+
+                    if (!haveBIM360Hub) {
+                        $("#provisionAccountModal").modal();
+                        $("#provisionAccountSave").click(function () {
+                            $('#provisionAccountModal').modal('toggle');
+                            $('#autodeskTree').jstree(true).refresh();
+                        });
+                        haveBIM360Hub = true;
+                    }
                 }
             }
         },

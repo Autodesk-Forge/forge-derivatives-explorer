@@ -37,6 +37,12 @@ router.get('/user/logoff', function (req, res) {
     res.end('/');
 });
 
+router.get('/api/forge/clientID', function (req, res) {
+  res.json({
+    'ForgeClientId': config.credentials.client_id
+  });
+});
+
 // return the public token of the current user
 // the public token should have a limited scope (read-only)
 router.get('/user/token', function (req, res) {
