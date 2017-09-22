@@ -84,3 +84,11 @@
 .btn-primary.active {
     background-color: limegreen;
 }
+
+.toolbarFusionButton {
+    background-image: url(/img/fusion.png);
+    background-size: 16px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+

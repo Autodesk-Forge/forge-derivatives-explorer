@@ -1079,6 +1079,53 @@ function addSelectionListener(viewer) {
         });
 }
 
+function getFullPath(tree, dbId) {
+    var path = [];
+    while (dbId) {
+        var name = tree.getNodeName(dbId);
+        path.unshift(name);
+        dbId = tree.getNodeParentId(dbId);
+    }
+
+    // We do not care about the top 2 items because it's just the file name
+    // and root component name
+    path = path.splice(2, path.length - 1)
+
+    return path.join('+');
+}
+
+function addFusionButton(viewer) {
+    var button = new Autodesk.Viewing.UI.Button('toolbarFusion');
+    button.onClick = function (e) {
+        var ids = viewer.getSelection();
+        if (ids.length === 1) {
+            var tree = viewer.model.getInstanceTree();
+            var fullPath = getFullPath(tree, ids[0]);
+            console.log(fullPath);
+
+            $.ajax ({
+                url: '/dm/fusionData/' + MyVars.selectedUrn + '/' + encodeURIComponent(fullPath),
+                type: 'GET'
+            }).done (function (data) {
+                console.log('Retrieved data');
+                console.log(data);
+
+                alert(JSON.stringify(data, null, 2));
+            }).fail (function (xhr, ajaxOptions, thrownError) {
+                alert('Failed to retrieve data') ;
+            }) ;
+        }
+    };
+    button.addClass('toolbarFusionButton');
+    button.setToolTip('Show Fusion properties');
+
+    // SubToolbar
+    var subToolbar = new Autodesk.Viewing.UI.ControlGroup('myFusionAppGroup');
+    subToolbar.addControl(button);
+
+    viewer.toolbar.addControl(subToolbar);
+}
+
 function loadDocument(viewer, documentId) {
     // Set the Environment to "Riverbank"
     viewer.setLightPreset(8);
@@ -1110,6 +1157,7 @@ function loadDocument(viewer, documentId) {
                 //viewer.load(doc.getViewablePath(geometryItems[0]), null, null, null, doc.acmSessionId /*session for DM*/);
                 var options = {};
                 viewer.loadModel(path, options);
+                addFusionButton(viewer);
             }
         },
         // onError

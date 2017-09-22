@@ -667,6 +667,54 @@ function makeTree(items, canHaveChildren, data) {
     return treeList;
 }
 
+function getIdAndVersion(urn64) {
+    var urn = new Buffer(urn64, 'base64').toString("ascii");
+    // urn will be something like this:
+    // urn:adsk.wipprod:fs.file:vf.dhFQocFPTdy5brBtQVvuCQ?version=1
+    var part = urn.split(':')[3];
+    // part be then this: vf.dhFQocFPTdy5brBtQVvuCQ?version=1
+    part = part.split('.')[1];
+    // part be then this: dhFQocFPTdy5brBtQVvuCQ?version=1
+    var parts = part.split('?');
+    var itemId = parts[0];
+    // itemId be then this: dhFQocFPTdy5brBtQVvuCQ
+    part = parts[1];
+    // part be then this: version=1
+    var version = part.split('=')[1]
+
+    return { itemId: "urn:adsk.wipprod:dm.lineage:" + itemId, version: parseInt(version) };
+}
+
+router.get('/fusionData/:urn/:path', function (req, res) {
+    var urn = req.params.urn;
+    var path = req.params.path;
+
+    var mongodb = require('mongodb');
+    var mongoClient = mongodb.MongoClient;
+
+    mongoClient.connect(process.env.MONGO_STATS, function(err, db){
+        if (err) {
+            //error(err);
+            console.log("Failed to connect to MongoDB on mLab");
+            res.status(500).end();
+        } else {
+            mongoClient.db = db; // keep connection
+            console.log("Connected to MongoDB on mLab");
+
+            var query = getIdAndVersion(urn);
+            query.fullPath = path;
+
+            var coll = db.collection("mycollection");
+
+            coll.find(query).toArray(function(err, results) {
+                console.log(results);
+
+                res.json(results);
+            });
+        }
+    });
+})
+
 /////////////////////////////////////////////////////////////////
 // Return the router object that contains the endpoints
 /////////////////////////////////////////////////////////////////

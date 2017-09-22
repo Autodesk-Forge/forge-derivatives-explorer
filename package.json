@@ -14,7 +14,8 @@
     "oauth": "^0.9.14",
     "request": "^2.72.0",
     "trim": "^0.0.1",
-    "forge-apis": "^0.4.1"
+    "forge-apis": "^0.4.1",
+    "mongodb": "^2.2.30"
   },
   "repository": {
     "type": "git",
