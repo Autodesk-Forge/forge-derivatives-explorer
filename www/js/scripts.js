@@ -548,6 +548,7 @@ function prepareFilesTree() {
             'themes': {"icons": true},
             'check_callback': true, // make it modifiable
             'data': {
+                cache: false,
                 "url": '/dm/treeNode',
                 "dataType": "json",
                 "data": function (node) {

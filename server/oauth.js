@@ -34,7 +34,8 @@ var config = require('./config');
 // as of now there is no Forge endpoint to invalidate tokens
 router.get('/user/logoff', function (req, res) {
     req.session.destroy();
-    res.end('/');
+    //res.end('/');
+    res.end("https://accounts.autodesk.com/Authentication/LogOut?ReturnToUrl=" + encodeURIComponent(req.get('host')))
 });
 
 router.get('/api/forge/clientID', function (req, res) {
@@ -58,6 +59,7 @@ router.get('/user/token', function (req, res) {
 
 // return the forge authenticate url
 router.get('/user/authenticate', function (req, res) {
+  console.log('/user/authenticate');
     // redirect the user to this page
     var url =
         "https://developer.api.autodesk.com" +
