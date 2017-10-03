@@ -1084,6 +1084,7 @@ function addSelectionListener(viewer) {
         });
 }
 
+// Get the full path of the selected body
 function getFullPath(tree, dbId) {
     var path = [];
     while (dbId) {
@@ -1099,6 +1100,9 @@ function getFullPath(tree, dbId) {
     return path.join('+');
 }
 
+// Adds a button to the toolbar that can be used
+// to check for body sepcific data in our mongo db
+// Call this once the Viewer has been set up
 function addFusionButton(viewer) {
     var button = new Autodesk.Viewing.UI.Button('toolbarFusion');
     button.onClick = function (e) {
@@ -1109,7 +1113,7 @@ function addFusionButton(viewer) {
             console.log(fullPath);
 
             $.ajax ({
-                url: '/dm/fusionData/' + MyVars.selectedUrn + '/' + encodeURIComponent(fullPath),
+                url: '/dm/fusionData/' + viewer.model.loader.svfUrn + '/' + encodeURIComponent(fullPath),
                 type: 'GET'
             }).done (function (data) {
                 console.log('Retrieved data');

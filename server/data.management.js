@@ -667,24 +667,23 @@ function makeTree(items, canHaveChildren, data) {
     return treeList;
 }
 
+// Get the item id and version number from the
+// base64 encoded version id
 function getIdAndVersion(urn64) {
     var urn = new Buffer(urn64, 'base64').toString("ascii");
     // urn will be something like this:
     // urn:adsk.wipprod:fs.file:vf.dhFQocFPTdy5brBtQVvuCQ?version=1
-    var part = urn.split(':')[3];
-    // part be then this: vf.dhFQocFPTdy5brBtQVvuCQ?version=1
-    part = part.split('.')[1];
-    // part be then this: dhFQocFPTdy5brBtQVvuCQ?version=1
-    var parts = part.split('?');
+    urn = urn.replace('urn:adsk.wipprod:fs.file:vf.', '')
+    var parts = urn.split('?version=');
+
     var itemId = parts[0];
-    // itemId be then this: dhFQocFPTdy5brBtQVvuCQ
-    part = parts[1];
-    // part be then this: version=1
-    var version = part.split('=')[1]
+    var version = parts[1];
 
     return { itemId: "urn:adsk.wipprod:dm.lineage:" + itemId, version: parseInt(version) };
 }
 
+// Expose an end point through which the client can check if our
+// mongo db contains info about the selected body
 router.get('/fusionData/:urn/:path', function (req, res) {
     var urn = req.params.urn;
     var path = req.params.path;
@@ -692,6 +691,8 @@ router.get('/fusionData/:urn/:path', function (req, res) {
     var mongodb = require('mongodb');
     var mongoClient = mongodb.MongoClient;
 
+    // You could also put the connection URL here, but it's nicer to have it
+    // in an Environment variable - MLAB_URL
     mongoClient.connect(process.env.MLAB_URL, function(err, db){
         if (err) {
             console.log(err);
