@@ -30,13 +30,16 @@ var forgeSDK = require('forge-apis');
 // forge config information, such as client ID and secret
 var config = require('./config');
 
+var cryptiles = require('cryptiles');
+
 // this end point will logoff the user by destroying the session
 // as of now there is no Forge endpoint to invalidate tokens
 router.get('/user/logoff', function (req, res) {
     req.session.destroy();
-    var redirectTo = "https://accounts.autodesk.com/Authentication/LogOut?ReturnToUrl=" + encodeURIComponent("https://" + req.get('host'));
-    console.log(redirectTo);
-    res.end(redirectTo);
+
+  res.header("Clear-Site-Data", { types: ["cache", "cookies", "storage", "executionContexts"]})
+
+    res.end('/');
 });
 
 router.get('/api/forge/clientID', function (req, res) {
@@ -60,6 +63,8 @@ router.get('/user/token', function (req, res) {
 
 // return the forge authenticate url
 router.get('/user/authenticate', function (req, res) {
+  req.session.csrf = cryptiles.randomString(24);
+
   console.log('/user/authenticate');
     // redirect the user to this page
     var url =
@@ -67,13 +72,20 @@ router.get('/user/authenticate', function (req, res) {
         '/authentication/v1/authorize?response_type=code' +
         '&client_id=' + config.credentials.client_id +
         '&redirect_uri=' + config.callbackURL +
+        '&state=' + req.session.csrf +
         '&scope=' + config.scopeInternal.join(" ");
     res.end(url);
 });
 
 // wait for Autodesk callback (oAuth callback)
 router.get('/api/forge/callback/oauth', function (req, res) {
-    var code = req.query.code;
+  var csrf = req.query.state;
+  if (csrf !== req.session.csrf) {
+    res.status(401).end();
+    return;
+  }
+
+  var code = req.query.code;
     var tokenSession = new token(req.session);
 
     // first get a full scope token for internal use (server-side)
