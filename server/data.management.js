@@ -692,7 +692,7 @@ router.get('/fusionData/:urn/:path', function (req, res) {
     var mongodb = require('mongodb');
     var mongoClient = mongodb.MongoClient;
 
-    mongoClient.connect(process.env.MONGO_STATS, function(err, db){
+    mongoClient.connect(process.env.MLAB_URL, function(err, db){
         if (err) {
             //error(err);
             console.log("Failed to connect to MongoDB on mLab");
