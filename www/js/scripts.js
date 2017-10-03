@@ -106,12 +106,16 @@ function signIn() {
 }
 
 function logoff() {
+    // Tell the server to clear session data
     $.ajax({
         url: '/user/logoff',
         success: function (oauthUrl) {
             location.href = oauthUrl;
         }
     });
+
+    // Log the browser out
+    $('#hiddenFrame').attr('src', 'https://accounts.autodesk.com/Authentication/LogOut');
 }
 
 function get3LegToken(callback) {
