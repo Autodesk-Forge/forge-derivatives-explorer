@@ -4,6 +4,7 @@ var MyVars = {
 
 $(document).ready(function () {
     //debugger;
+    $('#hiddenFrame').attr('src', '');
 
     // Make sure that "change" event is fired
     // even if same file is selected for upload
@@ -106,15 +107,23 @@ function signIn() {
 }
 
 function logoff() {
-    // Tell the server to clear session data
-    $.ajax({
-        url: '/user/logoff',
-        success: function (oauthUrl) {
-            location.href = oauthUrl;
-        }
+    // Subscribe to the load event to see
+    // when the LogOut page got loaded
+    $('#hiddenFrame').load(function(event){
+
+        // Unsubscribe from event
+        $("#hiddenFrame").off("load");
+
+        // Tell the server to clear session data
+        $.ajax({
+            url: '/user/logoff',
+            success: function (oauthUrl) {
+                location.href = oauthUrl;
+            }
+        });
     });
 
-    // Log the browser out
+    // Load the LogOut page
     $('#hiddenFrame').attr('src', 'https://accounts.autodesk.com/Authentication/LogOut');
 }
 

@@ -35,9 +35,9 @@ var cryptiles = require('cryptiles');
 // this end point will logoff the user by destroying the session
 // as of now there is no Forge endpoint to invalidate tokens
 router.get('/user/logoff', function (req, res) {
-    req.session.destroy();
+    console.log('/user/logoff')
 
-  res.header("Clear-Site-Data", { types: ["cache", "cookies", "storage", "executionContexts"]})
+    req.session.destroy();
 
     res.end('/');
 });
@@ -65,6 +65,8 @@ router.get('/user/token', function (req, res) {
 router.get('/user/authenticate', function (req, res) {
   req.session.csrf = cryptiles.randomString(24);
 
+  console.log('using csrf: ' + req.session.csrf);
+
   console.log('/user/authenticate');
     // redirect the user to this page
     var url =
@@ -80,6 +82,10 @@ router.get('/user/authenticate', function (req, res) {
 // wait for Autodesk callback (oAuth callback)
 router.get('/api/forge/callback/oauth', function (req, res) {
   var csrf = req.query.state;
+
+  console.log('stored csrf: ' + req.session.csrf);
+  console.log('got back csrf: ' + csrf);
+
   if (csrf !== req.session.csrf) {
     res.status(401).end();
     return;

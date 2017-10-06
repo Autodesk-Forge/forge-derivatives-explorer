@@ -19,12 +19,14 @@
 
 var express = require('express');
 var cookieParser = require('cookie-parser');
+var cookieSession = require('cookie-session');
 var session = require('express-session');
 var app = express();
 
 // this session will be used to save the oAuth token
 app.use(cookieParser());
-app.set('trust proxy', 1) // trust first proxy - HTTPS on Heroku 
+app.set('trust proxy', 1) // trust first proxy - HTTPS on Heroku
+
 app.use(session({
     secret: 'autodeskforge',
     cookie: {
@@ -35,6 +37,16 @@ app.use(session({
     resave: false,
     saveUninitialized: true
 }));
+
+/*
+app.use(cookieSession({
+    name: 'session',
+    keys: ['autodeskForge'],
+
+    // Cookie Options
+    maxAge: 60 * 60 * 1000
+}));
+*/
 
 // prepare server routing
 app.use('/', express.static(__dirname + '/../www')); // redirect static calls
