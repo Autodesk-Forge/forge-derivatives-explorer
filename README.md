@@ -13,7 +13,8 @@
 
 This sample shows how you can use the **Model Derivative API** and what you can do with it and also uses [Autodesk Viewer](https://developer.autodesk.com/en/docs/viewer/v2/overview/) for showing models. The front-end will look like:
 
-![](www/img/indexpage.png)
+### Thumnail
+![thumbnail](www/img/indexpage.png)
 
 ## Live version
 
