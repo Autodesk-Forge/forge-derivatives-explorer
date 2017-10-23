@@ -1109,6 +1109,19 @@ function getFullPath(tree, dbId) {
     return path.join('+');
 }
 
+function showAllProperties(viewer) {
+    var instanceTree = viewer.model.getData().instanceTree;
+
+    var allDbIds = Object.keys(instanceTree.nodeAccess.dbIdToIndex);
+
+    for (var key in allDbIds) {
+        var id = allDbIds[key];
+        viewer.model.getProperties(id, function (data) {
+            var str = "";
+        });
+    }
+}
+
 // Adds a button to the toolbar that can be used
 // to check for body sepcific data in our mongo db
 // Call this once the Viewer has been set up
