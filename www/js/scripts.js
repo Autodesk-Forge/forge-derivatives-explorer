@@ -1042,13 +1042,19 @@ function cleanupViewer() {
     if (MyVars.viewer && MyVars.viewer.model) {
         console.log("Unloading current model from Autodesk Viewer");
 
-        MyVars.viewer.impl.unloadModel(MyVars.viewer.model);
-        MyVars.viewer.impl.sceneUpdated(true);
+        //MyVars.viewer.impl.unloadModel(MyVars.viewer.model);
+        //MyVars.viewer.impl.sceneUpdated(true);
+        MyVars.viewer.tearDown();
+        MyVars.viewer.setUp(MyVars.viewer.config);
+
+        document.getElementById('forgeViewer').style.display = 'none';
     }
 }
 
 function initializeViewer(urn) {
     cleanupViewer();
+
+    document.getElementById('forgeViewer').style.display = 'block';
 
     console.log("Launching Autodesk Viewer for: " + urn);
 
@@ -1063,7 +1069,7 @@ function initializeViewer(urn) {
     } else {
         var viewerElement = document.getElementById('forgeViewer');
         var config = {
-            extensions: ['Autodesk.Viewing.webVR', 'Autodesk.Viewing.MarkupsGui'],
+            extensions: ['Autodesk.Viewing.WebVR', 'Autodesk.Viewing.MarkupsGui'],
             experimental: ['webVR_orbitModel']
         };
         MyVars.viewer = new Autodesk.Viewing.Private.GuiViewer3D(viewerElement, config);

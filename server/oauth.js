@@ -87,7 +87,7 @@ router.get('/api/forge/callback/oauth', function (req, res) {
   console.log('stored csrf: ' + req.session.csrf);
   console.log('got back csrf: ' + csrf);
 
-  if (csrf !== req.session.csrf) {
+  if (!csrf || csrf !== req.session.csrf) {
     res.status(401).end();
     return;
   }
