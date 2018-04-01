@@ -12,13 +12,13 @@ $(document).ready(function () {
         evt.target.value = "";
     });
 
-    $("#forgeUploadHidden").change(function(evt) {
+    $("#forgeUploadHidden").change(function (evt) {
 
         showProgress("Uploading file... ", "inprogress");
-        var data = new FormData () ;
+        var data = new FormData();
         var fileName = this.value;
-        data.append (0, this.files[0]) ;
-        $.ajax ({
+        data.append(0, this.files[0]);
+        $.ajax({
             url: '/dm/files',
             type: 'POST',
             headers: { 'x-file-name': fileName, 'wip-href': MyVars.selectedNode.original.href },
@@ -27,26 +27,26 @@ $(document).ready(function () {
             processData: false, // Don't process the files
             contentType: false, // Set content type to false as jQuery will tell the server its a query string request
             complete: null
-        }).done (function (data) {
+        }).done(function (data) {
             console.log('Uploaded file "' + data.fileName + '" with urn = ' + data.objectId);
 
             // Refresh file tree
             //$('#forgeFiles').jstree("refresh");
 
             showProgress("Upload successful", "success");
-        }).fail (function (xhr, ajaxOptions, thrownError) {
-            alert(fileName + ' upload failed!') ;
+        }).fail(function (xhr, ajaxOptions, thrownError) {
+            alert(fileName + ' upload failed!');
             showProgress("Upload failed", "failed");
-        }) ;
+        });
     });
 
-    var upload = $("#uploadFile").click(function(evt) {
+    var upload = $("#uploadFile").click(function (evt) {
         evt.preventDefault();
         $("#forgeUploadHidden").trigger("click");
     });
 
     // Get the tokens
-    get3LegToken(function(token) {
+    get3LegToken(function (token) {
         var auth = $("#authenticate");
 
         if (!token) {
@@ -66,10 +66,13 @@ $(document).ready(function () {
 
             // Download list of available file formats
             fillFormats();
+
+            initializeViewer("dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlZWTXV3QXBQUmFXQlJNT1VvRkN5RFE_dmVyc2lvbj0x");
+            //initializeViewer("dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnNwcUlHTTJEUkwyUDdrYVZ5RTlKOVE_dmVyc2lvbj0x");
         }
     });
 
-    $('#progressInfo').click(function() {
+    $('#progressInfo').click(function () {
         MyVars.keepTrying = false;
         showProgress("Translation stopped", 'failed');
     });
@@ -109,7 +112,7 @@ function signIn() {
 function logoff() {
     // Subscribe to the load event to see
     // when the LogOut page got loaded
-    $('#hiddenFrame').load(function(event){
+    $('#hiddenFrame').load(function (event) {
 
         // Unsubscribe from event
         $("#hiddenFrame").off("load");
@@ -172,7 +175,7 @@ function downloadDerivative(urn, derUrn, fileName) {
         "&derUrn=" + derUrn +
         "&fileName=" + encodeURIComponent(fileName);
 
-    window.open(url,'_blank');
+    window.open(url, '_blank');
 }
 
 function getThumbnail(urn) {
@@ -181,7 +184,7 @@ function getThumbnail(urn) {
     var url = window.location.protocol + "//" + window.location.host +
         "/dm/thumbnail?urn=" + urn;
 
-    window.open(url,'_blank');
+    window.open(url, '_blank');
 }
 
 function isArraySame(arr1, arr2) {
@@ -238,12 +241,12 @@ function getDerivativeUrns(derivative, format, getThumbnail, objectIds) {
 function askForFileType(format, urn, guid, objectIds, rootFileName, fileExtType, onsuccess) {
     console.log("askForFileType " + format + " for urn=" + urn);
     var advancedOptions = {
-        'stl' : {
+        'stl': {
             "format": "binary",
             "exportColor": true,
             "exportFileStructure": "single" // "multiple" does not work
         },
-        'obj' : {
+        'obj': {
             "modelGuid": guid,
             "objectIds": objectIds
         }
@@ -272,7 +275,7 @@ function askForFileType(format, urn, guid, objectIds, rootFileName, fileExtType,
                 onsuccess(res);
             });
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         showProgress("Could not start translation", "fail");
         console.log('/md/export call failed\n' + err.statusText);
     });
@@ -294,14 +297,14 @@ function getMetadata(urn, onsuccess) {
         // delete the manifest
         var md0 = data.data.metadata[0];
         if (!md0) {
-            getManifest(urn, function () {});
+            getManifest(urn, function () { });
         } else {
             var guid = md0.guid;
             if (onsuccess !== undefined) {
                 onsuccess(guid);
             }
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         console.log('GET /md/metadata call failed\n' + err.statusText);
     });
 }
@@ -311,7 +314,7 @@ function getHierarchy(urn, guid, onsuccess) {
     $.ajax({
         url: '/md/hierarchy',
         type: 'GET',
-        data: {urn: urn, guid: guid}
+        data: { urn: urn, guid: guid }
     }).done(function (data) {
         console.log(data);
 
@@ -319,9 +322,9 @@ function getHierarchy(urn, guid, onsuccess) {
         if (data.result === 'accepted') {
             // Let's try again
             if (MyVars.keepTrying) {
-                window.setTimeout(function() {
-                        getHierarchy(urn, guid, onsuccess);
-                    }, 500
+                window.setTimeout(function () {
+                    getHierarchy(urn, guid, onsuccess);
+                }, 500
                 );
             } else {
                 MyVars.keepTrying = true;
@@ -334,7 +337,7 @@ function getHierarchy(urn, guid, onsuccess) {
         if (onsuccess !== undefined) {
             onsuccess(data);
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         console.log('GET /md/hierarchy call failed\n' + err.statusText);
     });
 }
@@ -344,14 +347,14 @@ function getProperties(urn, guid, onsuccess) {
     $.ajax({
         url: '/md/properties',
         type: 'GET',
-        data: {urn: urn, guid: guid}
+        data: { urn: urn, guid: guid }
     }).done(function (data) {
         console.log(data);
 
         if (onsuccess !== undefined) {
             onsuccess(data);
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         console.log('GET /api/properties call failed\n' + err.statusText);
     });
 }
@@ -370,9 +373,9 @@ function getManifest(urn, onsuccess) {
 
                 if (MyVars.keepTrying) {
                     // Keep calling until it's done
-                    window.setTimeout(function() {
-                            getManifest(urn, onsuccess);
-                        }, 500
+                    window.setTimeout(function () {
+                        getManifest(urn, onsuccess);
+                    }, 500
                     );
                 } else {
                     MyVars.keepTrying = true;
@@ -381,13 +384,13 @@ function getManifest(urn, onsuccess) {
                 showProgress("Translation completed", data.status);
                 onsuccess(data);
             }
-        // if it's a failed translation best thing is to delete it
+            // if it's a failed translation best thing is to delete it
         } else {
             showProgress("Translation failed", data.status);
             // Should we do automatic manifest deletion in case of a failed one?
             //delManifest(urn, function () {});
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         showProgress("Translation failed", 'failed');
         console.log('GET /api/manifest call failed\n' + err.statusText);
     });
@@ -405,7 +408,7 @@ function delManifest(urn, onsuccess) {
                 onsuccess(data);
             }
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         console.log('DELETE /api/manifest call failed\n' + err.statusText);
     });
 }
@@ -426,18 +429,18 @@ function getFormats(onsuccess) {
         if (onsuccess !== undefined) {
             onsuccess(data);
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         console.log('GET /md/formats call failed\n' + err.statusText);
     });
 }
 
 function fillFormats() {
-    getFormats(function(data) {
+    getFormats(function (data) {
         var forgeFormats = $("#forgeFormats");
         forgeFormats.data("forgeFormats", data);
 
         var download = $("#downloadExport");
-        download.click(function() {
+        download.click(function () {
             MyVars.keepTrying = true;
 
             var elem = $("#forgeHierarchy");
@@ -497,7 +500,7 @@ function fillFormats() {
                                 // Get the last element
                                 ossName = ossNameParts[ossNameParts.length - 1];
 
-                                downloadDerivative(urn, derUrns[0].replace('.obj' , '.mtl'), ossName.replace('.obj', '.mtl'));
+                                downloadDerivative(urn, derUrns[0].replace('.obj', '.mtl'), ossName.replace('.obj', '.mtl'));
                             }
                         } else {
                             showProgress("Could not find specific OBJ file", "failed");
@@ -515,12 +518,12 @@ function fillFormats() {
         });
 
         var deleteManifest = $("#deleteManifest");
-        deleteManifest.click(function() {
+        deleteManifest.click(function () {
             var urn = MyVars.selectedUrn;
 
             cleanupViewer();
 
-            delManifest(urn, function() { });
+            delManifest(urn, function () { });
         });
     });
 }
@@ -535,7 +538,7 @@ function updateFormats(format) {
     // using this workaround for the time being
     //forgeFormats.append($("<option />").val('obj').text('obj'));
 
-    $.each(formats.formats, function(key, value) {
+    $.each(formats.formats, function (key, value) {
         if (key === 'obj' || value.indexOf(format) > -1) {
             forgeFormats.append($("<option />").val(key).text(key));
         }
@@ -558,7 +561,7 @@ function prepareFilesTree() {
 
     $('#forgeFiles').jstree({
         'core': {
-            'themes': {"icons": true},
+            'themes': { "icons": true },
             'check_callback': true, // make it modifiable
             'data': {
                 cache: false,
@@ -693,7 +696,7 @@ function downloadAttachment(href, attachmentVersionId) {
     var url = window.location.protocol + "//" + window.location.host +
         "/dm/attachments/" + encodeURIComponent(attachmentVersionId) + "?href=" + encodeURIComponent(href);
 
-    window.open(url,'_blank');
+    window.open(url, '_blank');
 }
 
 function deleteAttachment(href, attachmentVersionId) {
@@ -712,7 +715,7 @@ function deleteAttachment(href, attachmentVersionId) {
                 onsuccess(data);
             }
         }
-    }).fail(function(err) {
+    }).fail(function (err) {
         console.log('DELETE /api/manifest call failed\n' + err.statusText);
     });
 }
@@ -721,7 +724,7 @@ function filesTreeContextMenu(node, callback) {
     if (node.type === 'versions') {
         $.ajax({
             url: '/dm/attachments',
-            data: {href: node.original.href},
+            data: { href: node.original.href },
             type: 'GET',
             success: function (data) {
                 var menuItems = null;
@@ -733,7 +736,7 @@ function filesTreeContextMenu(node, callback) {
                                 alert(obj.item.label + " with versionId = " + obj.item.versionId);
                             },
                             "versionId": item.id,
-                            "submenu" : {
+                            "submenu": {
                                 "open": {
                                     "label": "Open",
                                     "action": function (obj) {
@@ -759,7 +762,7 @@ function filesTreeContextMenu(node, callback) {
                 })
 
                 if (!menuItems) {
-                    callback({noItem: {label: "No attachments", action: function () {}}});
+                    callback({ noItem: { label: "No attachments", action: function () { } } });
                 } else {
                     callback(menuItems);
                 }
@@ -849,10 +852,10 @@ function prepareHierarchyTree(urn, guid, json) {
     $('#forgeHierarchy').jstree({
         'core': {
             'check_callback': true,
-            'themes': {"icons": true},
+            'themes': { "icons": true },
             'data': json.objects
         },
-        'checkbox' : {
+        'checkbox': {
             'tie_selection': false,
             "three_state": true,
             'whole_node': false
@@ -906,21 +909,23 @@ function prepareHierarchyTree(urn, guid, json) {
 function selectInHierarchyTree(objectIds) {
     MyVars.selectingInHierarchyTree = true;
 
-    var tree = $("#forgeHierarchy").jstree();
+    try {
+        var tree = $("#forgeHierarchy").jstree();
 
-    // First remove all the selection
-    tree.uncheck_all();
+        // First remove all the selection
+        tree.uncheck_all();
 
-    // Now select the newly selected items
-    for (var key in objectIds) {
-        var id = objectIds[key];
+        // Now select the newly selected items
+        for (var key in objectIds) {
+            var id = objectIds[key];
 
-        // Select the node
-        tree.check_node(id);
+            // Select the node
+            tree.check_node(id);
 
-        // Make sure that it is visible for the user
-        tree._open_to(id);
-    }
+            // Make sure that it is visible for the user
+            tree._open_to(id);
+        }
+    } catch (ex) { }
 
     MyVars.selectingInHierarchyTree = false;
 }
@@ -931,7 +936,7 @@ function hierarchyTreeContextMenu(node, callback) {
     var menuItem = {
         "label": "Select in Fusion",
         "action": function (obj) {
-            var path = $("#forgeHierarchy").jstree().get_path(node,'/');
+            var path = $("#forgeHierarchy").jstree().get_path(node, '/');
             alert(path);
 
             // Open this in the browser:
@@ -960,7 +965,7 @@ function hierarchyTreeContextMenu(node, callback) {
 function fetchProperties(urn, guid, onsuccess) {
     var props = $("#forgeProperties").data("forgeProperties");
     if (!props) {
-        getProperties(urn, guid, function(data) {
+        getProperties(urn, guid, function (data) {
             $("#forgeProperties").data("forgeProperties", data.data);
             onsuccess(data.data);
         })
@@ -980,7 +985,7 @@ function addSubProperties(node, props) {
                 "text": subPropId,
                 "type": "properties"
             });
-            var newNode = node.children[length-1];
+            var newNode = node.children[length - 1];
             addSubProperties(newNode, subProp);
         } else {
             node.children.push({
@@ -1004,14 +1009,14 @@ function addProperties(node, props) {
 
 function preparePropertyTree(urn, guid, objectId, props) {
     // Convert data to expected format
-    var data = { 'objectid' : objectId };
+    var data = { 'objectid': objectId };
     addProperties(data, props.collection);
 
     // init the tree
     $('#forgeProperties').jstree({
         'core': {
             'check_callback': true,
-            'themes': {"icons": true},
+            'themes': { "icons": true },
             'data': data.children
         },
         'types': {
@@ -1027,7 +1032,7 @@ function preparePropertyTree(urn, guid, objectId, props) {
         },
         "plugins": ["types", "sort"]
     }).bind("activate_node.jstree", function (evt, data) {
-       //
+        //
     });
 }
 
@@ -1093,7 +1098,7 @@ function addSelectionListener(viewer) {
             var dbId = event.dbIdArray[0];
             if (dbId) {
                 viewer.getProperties(dbId, function (props) {
-                   console.log(props.externalId);
+                    console.log(props.externalId);
                 });
             }
         });
@@ -1140,17 +1145,17 @@ function addFusionButton(viewer) {
             var fullPath = getFullPath(tree, ids[0]);
             console.log(fullPath);
 
-            $.ajax ({
+            $.ajax({
                 url: '/dm/fusionData/' + viewer.model.loader.svfUrn + '/' + encodeURIComponent(fullPath),
                 type: 'GET'
-            }).done (function (data) {
+            }).done(function (data) {
                 console.log('Retrieved data');
                 console.log(data);
 
                 alert(JSON.stringify(data, null, 2));
-            }).fail (function (xhr, ajaxOptions, thrownError) {
-                alert('Failed to retrieve data') ;
-            }) ;
+            }).fail(function (xhr, ajaxOptions, thrownError) {
+                alert('Failed to retrieve data');
+            });
         }
     };
     button.addClass('toolbarFusionButton');
@@ -1161,6 +1166,22 @@ function addFusionButton(viewer) {
     subToolbar.addControl(button);
 
     viewer.toolbar.addControl(subToolbar);
+}
+
+
+function subscribeToAllEvents(viewer) {
+    for (var key in Autodesk.Viewing) {
+        if (key.endsWith("_EVENT")) {
+            (function (eventName) {
+                viewer.addEventListener(
+                    Autodesk.Viewing[eventName],
+                    function (event) {
+                        console.log(eventName, "/", event);
+                    }
+                );
+            })(key);
+        }
+    }
 }
 
 function loadDocument(viewer, documentId) {
@@ -1182,6 +1203,8 @@ function loadDocument(viewer, documentId) {
                 'role': '3d'
             }, true);
 
+            //subscribeToAllEvents(viewer);
+
             // If no 3d then try 2d
             if (geometryItems.length < 1)
                 geometryItems = Autodesk.Viewing.Document.getSubItemsWithProperties(doc.getRootItem(), {
@@ -1196,6 +1219,13 @@ function loadDocument(viewer, documentId) {
                 viewer.loadModel(path, options);
                 addFusionButton(viewer);
             }
+
+            viewer.addEventListener(
+                Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
+                function (event) {
+                    MyVars.startTracking(viewer, 1500, {x: 800, y: 500, z: 1000});
+                }
+            );
         },
         // onError
         function (errorMsg) {
@@ -1208,6 +1238,110 @@ function selectInViewer(objectIds) {
     if (MyVars.viewer) {
         MyVars.viewer.select(objectIds);
     }
+}
+
+/////////////////////////////////////////////////////////////////
+// ART SmartTrack
+/////////////////////////////////////////////////////////////////
+
+MyVars.startTracking = function (viewer, artSize, artTranslation) {
+    if (!MyVars._socket) {
+        MyVars._socket = io();
+    }
+
+    // We need perspecive view in order to go inside buildings, etc
+    viewer.navigation.toPerspective();
+    
+    var _modelBox = viewer.model.getBoundingBox();
+    var _modelSize = _modelBox.min.distanceTo(_modelBox.max);
+    var _scale = _modelSize / artSize;
+
+    function setCamera(viewer, positionValues, matrixValues) {
+        // This is used to transformt the camera positions so that XY is the horizontal plane and
+        // Z is the up vector  
+        // In case of camera:
+        //   Z is distance from camera >> Viewer X
+        //   X is up and down >> Viewer Z
+        //   Y is left and right >> Viewer Y 
+        var positionTransform = new THREE.Matrix4();
+        positionTransform.set(
+            0, -_scale, 0, artTranslation.y * _scale,
+            0, 0, _scale,  -artTranslation.z * _scale,
+            -_scale, 0, 0, artTranslation.x * _scale,
+            0, 0, 0, 1);
+
+        var camera = new THREE.Matrix4();
+        camera.set(
+            matrixValues[0], matrixValues[3], matrixValues[6], 0,
+            matrixValues[1], matrixValues[4], matrixValues[7], 0,
+            matrixValues[2], matrixValues[5], matrixValues[8], 0,
+            0, 0, 0, 1);
+
+        var position = new THREE.Matrix4();
+        position.set(
+            1, 0, 0, positionValues[0],
+            0, 1, 0, positionValues[1],
+            0, 0, 1, positionValues[2],
+            0, 0, 0, 1);
+
+        var targetZ = new THREE.Vector3(0, 0, 1);
+        targetZ = targetZ.applyMatrix4(camera);
+        //console.log(">>>>>>>>> targetZ", targetZ);
+
+        //console.log("original position", position);
+        position = positionTransform.multiply(position);
+        //console.log("transformed position", position);
+
+        //console.log("original camera", camera);
+        camera = positionTransform.multiply(camera);
+        //console.log("transformed camera", camera);
+
+
+        // Main camera vectors
+        var x = new THREE.Vector3(), y = new THREE.Vector3(), z = new THREE.Vector3();
+        camera.extractBasis(x, y, z);
+        //console.log(x, y, z);
+
+        // Eye / Position
+        var eye = new THREE.Vector3();
+        eye.setFromMatrixPosition(position);
+        //console.log("eye", eye);
+
+        // Target / Center
+        var target = new THREE.Vector3().copy(eye);
+        target.add(x.setLength(2));
+        //console.log("target", target);
+
+        // UpVector
+        var up = z.setLength(1);
+        //console.log("up", up);
+
+        // Set values
+        viewer.navigation.setTarget(target);
+        viewer.navigation.setPosition(eye);
+        viewer.navigation.setCameraUpVector(up);
+    }
+
+    MyVars._socket.on('ART', function (msg) {
+        // Will be something like:
+        // 6di 4 [0 0 0.000][0.000 0.000 0.000][0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000] 
+        // [1 0 0.000][0.000 0.000 0.000][0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000] 
+        // [2 0 0.000][0.000 0.000 0.000][0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000] 
+        // [3 0 0.000][0.000 0.000 0.000][0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000]
+        //console.log(msg);
+
+        if (MyVars.viewer.navigation) {
+            var arrays = msg.split("[");
+
+            var positionStrings = arrays[2].replace("]", "").split(" ");
+            var matrixStrings = arrays[3].replace("] ", "").split(" ");
+
+            var positionValues = positionStrings.map(v => parseFloat(v));
+            var matrixValues = matrixStrings.map(v => parseFloat(v));
+
+            setCamera(MyVars.viewer, positionValues, matrixValues);
+        }
+    });
 }
 
 /////////////////////////////////////////////////////////////////
