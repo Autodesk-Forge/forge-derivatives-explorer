@@ -346,6 +346,42 @@ router.post('/files', jsonParser, function (req, res) {
     form.parse(req);
 });
 
+router.get('/files/:href/publicurl', function (req, res) {
+
+    var tokenSession = new token(req.session);
+
+    // Find out the project where we have to upload the file
+    var href = decodeURIComponent(req.params.href);
+    var params = href.split('/');
+    var projectId = params[params.length - 3];
+    var versionId = params[params.length - 1];
+
+    var versions = new forgeSDK.VersionsApi();
+
+    // Get version info first to find out the OSS location
+    versions.getVersion(projectId, versionId, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+        .then(function (versionData) {
+            var objectId = versionData.body.data.relationships.storage.data.id;
+            var boName = getBucketKeyObjectName(objectId);
+
+            var objects = new forgeSDK.ObjectsApi();
+            objects.createSignedResource(boName.bucketKey, boName.objectName, {}, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+                .then(function (data) {
+                    res.json(data.body);
+                })
+                .catch(function (error) {
+                    res.status(error.statusCode).end(error.statusMessage);
+                });
+        })
+        .catch(function (error) {
+            res.status(error.statusCode).end(error.statusMessage);
+        });
+
+
+
+   
+})
+
 function getBucketKeyObjectName(objectId) {
     // the objectId comes in the form of
     // urn:adsk.objects:os.object:BUCKET_KEY/OBJECT_NAME

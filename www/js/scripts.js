@@ -622,8 +622,8 @@ function prepareFilesTree() {
         cleanupViewer();
 
         // Disable the hierarchy related controls for the time being
-        $("#forgeFormats").attr('disabled', 'disabled');
-        $("#downloadExport").attr('disabled', 'disabled');
+        //$("#forgeFormats").attr('disabled', 'disabled');
+        //$("#downloadExport").attr('disabled', 'disabled');
 
         if (data.node.type === 'versions') {
             $("#deleteManifest").removeAttr('disabled');
@@ -727,7 +727,16 @@ function filesTreeContextMenu(node, callback) {
             data: { href: node.original.href },
             type: 'GET',
             success: function (data) {
-                var menuItems = null;
+                var menuItems = {
+                    publicUrl: {
+                        "label": "Public URL",
+                        "action": function (obj) {
+                            getPublicUrl(obj.item.href);
+                        },
+                        "href": node.original.href,
+                        "versionId": node.data
+                    }
+                };
                 data.data.forEach(function (item) {
                     if (item.meta.extension.type === "auxiliary:autodesk.core:Attachment") {
                         var menuItem = {
@@ -756,7 +765,6 @@ function filesTreeContextMenu(node, callback) {
                             }
                         };
 
-                        menuItems = menuItems || {};
                         menuItems[item.id] = menuItem;
                     }
                 })
@@ -771,6 +779,18 @@ function filesTreeContextMenu(node, callback) {
     }
 
     return;
+}
+
+function getPublicUrl(id) {
+    $.ajax({
+        url: '/dm/files/' + encodeURIComponent(id) + '/publicurl',
+        type: 'GET'
+    }).done(function (data) {
+        console.log(data);
+        alert(data.signedUrl);
+    }).fail(function(err) {
+        console.log('DELETE /dm/buckets/ call failed\n' + err.statusText);
+    });
 }
 
 /////////////////////////////////////////////////////////////////
@@ -841,8 +861,8 @@ function prepareHierarchyTree(urn, guid, json) {
     addHierarchy(json.objects);
 
     // Enable the hierarchy related controls
-    $("#forgeFormats").removeAttr('disabled');
-    $("#downloadExport").removeAttr('disabled');
+    //$("#forgeFormats").removeAttr('disabled');
+    //$("#downloadExport").removeAttr('disabled');
 
     // Store info of selected item
     MyVars.selectedUrn = urn;
@@ -1080,7 +1100,7 @@ function initializeViewer(urn) {
         MyVars.viewer = new Autodesk.Viewing.Private.GuiViewer3D(viewerElement, config);
         Autodesk.Viewing.Initializer(
             options,
-            function () {
+            function something () {
                 MyVars.viewer.start(); // this would be needed if we also want to load extensions
                 loadDocument(MyVars.viewer, options.document);
                 addSelectionListener(MyVars.viewer);
@@ -1133,12 +1153,48 @@ function showAllProperties(viewer) {
     }
 }
 
+function toggleLayer(layerName, viewer) {
+    var root = viewer.impl.getLayersRoot();
+
+    if (root == null) {
+        console.log("No layer information...");
+        return;
+    }
+
+    var toggleLayerSub = function(layer, layerName, viewer) {
+        if (layer.name === layerName) {
+            var visible = !viewer.isLayerVisible(layer);
+            viewer.setLayerVisible(
+                [layer], // list of layers
+                visible, // visible
+                false    // isolate
+            );
+        }
+    }
+
+    for (var i = 0; i < root.childCount; i++) {
+        var layer = root.children[i];
+
+        // We can also check inside layer groups 
+        if (!layer.isLayer) {
+            for (var j = 0; j < layer.childCount; j++) {
+                toggleLayerSub(layer[j], layerName, viewer);
+            }
+        } else {
+            toggleLayerSub(layer, layerName, viewer);
+        }  
+    }
+}
+
 // Adds a button to the toolbar that can be used
 // to check for body sepcific data in our mongo db
 // Call this once the Viewer has been set up
 function addFusionButton(viewer) {
     var button = new Autodesk.Viewing.UI.Button('toolbarFusion');
     button.onClick = function (e) {
+        toggleLayer("Title (ANSI)", viewer);
+        return;
+
         var ids = viewer.getSelection();
         if (ids.length === 1) {
             var tree = viewer.model.getInstanceTree();
@@ -1223,7 +1279,7 @@ function loadDocument(viewer, documentId) {
             viewer.addEventListener(
                 Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
                 function (event) {
-                    MyVars.startTracking(viewer, 1500, {x: 800, y: 500, z: 1000});
+                    MyVars.startTracking(viewer, 1500, { x: 800, y: 500, z: 1000 });
                 }
             );
         },
@@ -1251,7 +1307,7 @@ MyVars.startTracking = function (viewer, artSize, artTranslation) {
 
     // We need perspecive view in order to go inside buildings, etc
     viewer.navigation.toPerspective();
-    
+
     var _modelBox = viewer.model.getBoundingBox();
     var _modelSize = _modelBox.min.distanceTo(_modelBox.max);
     var _scale = _modelSize / artSize;
@@ -1266,7 +1322,7 @@ MyVars.startTracking = function (viewer, artSize, artTranslation) {
         var positionTransform = new THREE.Matrix4();
         positionTransform.set(
             0, -_scale, 0, artTranslation.y * _scale,
-            0, 0, _scale,  -artTranslation.z * _scale,
+            0, 0, _scale, -artTranslation.z * _scale,
             -_scale, 0, 0, artTranslation.x * _scale,
             0, 0, 0, 1);
 
