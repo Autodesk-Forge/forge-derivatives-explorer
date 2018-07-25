@@ -10,7 +10,7 @@
     "ejs": "^2.6.1",
     "express": "^4.16.3",
     "express-session": "^1.15.6",
-    "forge-apis": "^0.4.2",
+    "forge-apis": "^0.4.3",
     "formidable": "^1.2.1",
     "mongodb": "^2.2.35",
     "morgan": "^1.9.0",
