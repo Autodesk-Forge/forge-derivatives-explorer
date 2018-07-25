@@ -534,13 +534,17 @@ router.get('/treeNode', function (req, res) {
         // # stands for ROOT
         var hubs = new forgeSDK.HubsApi();
 
-        hubs.getHubs({}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+        try {
+            hubs.getHubs({filterId: null, filterExtensionType: null}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function (data) {
                 res.json(makeTree(data.body.data, true));
             })
             .catch(function (error) {
                 console.log(error);
             });
+        } catch (ex) {
+            console.log(ex);
+        }  
     } else {
         var params = href.split('/');
         var resourceName = params[params.length - 2];
@@ -550,7 +554,7 @@ router.get('/treeNode', function (req, res) {
                 // if the caller is a hub, then show projects
                 var projects = new forgeSDK.ProjectsApi();
 
-                projects.getHubProjects(resourceId/*hub_id*/, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+                projects.getHubProjects(resourceId/*hub_id*/, {filterId: null, filterExtensionType: null}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (projects) {
                         res.json(makeTree(projects.body.data, true));
                     })
@@ -603,7 +607,8 @@ router.get('/treeNode', function (req, res) {
                 // if the caller is a folder, then show contents
                 var projectId = params[params.length - 3];
                 var folders = new forgeSDK.FoldersApi();
-                folders.getFolderContents(projectId, resourceId/*folder_id*/, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+                folders.getFolderContents(projectId, resourceId/*folder_id*/, {filterType: null, filterId: null, filterExtensionType: null}, 
+                    tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (folderContents) {
                         res.json(makeTree(folderContents.body.data, true));
                     })
@@ -615,7 +620,8 @@ router.get('/treeNode', function (req, res) {
                 // if the caller is an item, then show versions
                 var projectId = params[params.length - 3];
                 var items = new forgeSDK.ItemsApi();
-                items.getItemVersions(projectId, resourceId/*item_id*/, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+                items.getItemVersions(projectId, resourceId/*item_id*/, {filterType: null, filterId: null, filterExtensionType: null, filterVersionNumber: null}, 
+                    tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                     .then(function (versions) {
                         res.json(makeTree(versions.body.data, false));
                     })
