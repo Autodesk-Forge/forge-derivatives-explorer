@@ -3,30 +3,35 @@
 [![Node.js](https://img.shields.io/badge/Node.js-6.2-blue.svg)](https://nodejs.org/)
 [![npm](https://img.shields.io/badge/npm-5.5.1-blue.svg)](https://www.npmjs.com/)
 ![Platforms](https://img.shields.io/badge/platform-windows%20%7C%20osx%20%7C%20linux-lightgray.svg)
-[![License](http://img.shields.io/:license-mit-blue.svg)](http://opensource.org/licenses/MIT)
-
+[![License](https://img.shields.io/:license-mit-blue.svg)](http://opensource.org/licenses/MIT)
 [![OAuth2](https://img.shields.io/badge/OAuth2-v1-green.svg)](http://developer.autodesk.com/)
-[![OSS](https://img.shields.io/badge/OSS-v2-green.svg)](http://developer.autodesk.com/)
+[![OSS](https://img.shields.io/badge/Data_Management-v1-green.svg)](http://developer.autodesk.com/)
 [![Model-Derivative](https://img.shields.io/badge/Model%20Derivative-v2-green.svg)](http://developer.autodesk.com/)
-[![Viewer](https://img.shields.io/badge/Viewer-v5.0-green.svg)](http://developer.autodesk.com/)
+[![Viewer](https://img.shields.io/badge/Viewer-v6-green.svg)](http://developer.autodesk.com/)
+[![Level](https://img.shields.io/badge/Level-Intermediate-blue.svg)](http://developer.autodesk.com/)
 
 # Description
 
 This sample shows how you can use the **Model Derivative API** and what you can do with it and also uses [Autodesk Viewer](https://developer.autodesk.com/en/docs/viewer/v2/overview/) for showing models. The front-end will look like:
 
-### Thumbnail
+## Thumbnail
 ![thumbnail](www/img/indexpage.png)
 
 ## Live version
 
 See it live at [https://derivatives.autodesk.io](https://derivatives.autodesk.io) 
 
-## Setup
+# Setup
 
-In order to use this sample you need Autodesk developer credentials. Visit the [Forge Developer Portal](https://developer.autodesk.com), sign up for an account, then [create an app](https://developer.autodesk.com/myapps/create). For this new app, use <b>http://localhost:3000/api/forge/callback/oauth</b> as Callback URL. Finally take note of the <b>Client ID</b> and <b>Client Secret</b>.
+## Prerequisites
 
+1. **BIM 360 or other Autodesk storage account**: if you want to use it with files from BIM 360 Docs then you must be an Account Admin to add the app integration. [Learn about provisioning](https://forge.autodesk.com/blog/bim-360-docs-provisioning-forge-apps).
+2. **Forge Account**: Learn how to create a Forge Account, activate subscription and create an app at [this tutorial](http://learnforge.autodesk.io/#/account/). 
+3. **Visual Studio Code**: other text editors could be used too, but Visual Studio Code is a widely used editor, see [https://code.visualstudio.com/](https://code.visualstudio.com/) 
+4. **Node.js**: basic knowledge of Node.js, see [https://nodejs.org/en/](https://nodejs.org/en/) 
+5. **JavaScript**: basic knowledge
 
-### Run locally
+## Running locally
 
 Install [NodeJS](https://nodejs.org).
 
@@ -54,17 +59,33 @@ Open the browser: [http://localhost:3000](http://localhost:3000).
 
 <b>Important:</b> do not use <b>npm start</b> locally, this is intended for PRODUCTION only with HTTPS (SSL) secure cookies.
 
-### Deploy on Heroku
+## Deployment
 
-To deploy this application to Heroku, the <b>Callback URL</b> & <b>redirect_uri</b> must use your .herokuapp.com address. After clicking on the button below, at the Heroku Create New App page, set your Client ID & Secret and the correct callback URL.
+To deploy this application to Heroku, the **Callback URL** for Forge must use your `.herokuapp.com` address. After clicking on the button below, at the Heroku Create New App page, set your Client ID, Secret and Callback URL for Forge.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/Autodesk-Forge/model.derivative-nodejs-sample)
 
-## Packages used
+Watch [this video](https://www.youtube.com/watch?v=Oqa9O20Gj0c) on how deploy samples to Heroku.
 
-All Autodesk Forge NPM packages are included by default, see complete list of what's available at [NPM website](https://www.npmjs.com/browse/keyword/autodesk). OAuth, Model Derivative and OSS are used. Some other non-Autodesk packaged are used, including [express](https://www.npmjs.com/package/express) and its session/cookie middlewares ([express-session](https://www.npmjs.com/package/express-session) and [cookie-parser](https://www.npmjs.com/package/cookie-parser)) for user session handling. The front-end uses [bootsrap](https://www.npmjs.com/package/bootstrap) and [jquery](https://www.npmjs.com/package/jquery).
+# Further reading
 
-# Tips & tricks
+Documentation:
+
+- [BIM 360 API](https://developer.autodesk.com/en/docs/bim360/v1/overview/) and [App Provisioning](https://forge.autodesk.com/blog/bim-360-docs-provisioning-forge-apps)
+- [Data Management API](https://developer.autodesk.com/en/docs/data/v2/overview/)
+- [Viewer](https://developer.autodesk.com/en/docs/viewer/v6)
+
+Tutorials:
+
+- [View BIM 360 Models](http://learnforge.autodesk.io/#/tutorials/viewhubmodels)
+- [Retrieve Issues](https://developer.autodesk.com/en/docs/bim360/v1/tutorials/retrieve-issues)
+
+Blogs:
+
+- [Forge Blog](https://forge.autodesk.com/categories/bim-360-api)
+- [Field of View](https://fieldofviewblog.wordpress.com/), a BIM focused blog
+
+### Tips & tricks
 
 For local development/testing, consider use [nodemon](https://www.npmjs.com/package/nodemon) package, which auto restart your node application after any modification on your code. To install it, use:
 
@@ -76,13 +97,13 @@ Then, instead of <b>npm run dev</b>, use the following:
 
 Which executes <b>nodemon server.js --ignore www/</b>, where the <b>--ignore</b> parameter indicates that the app should not restart if files under <b>www</b> folder are modified.
 
-## Troubleshooting
+### Troubleshooting
 
 After installing Github desktop for Windows, on the Git Shell, if you see a <b>*error setting certificate verify locations*</b> error, use the following:
 
     git config --global http.sslverify "false"
 
-# License
+## License
 
 This sample is licensed under the terms of the [MIT License](http://opensource.org/licenses/MIT).
 Please see the [LICENSE](LICENSE) file for full details.
