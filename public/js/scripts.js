@@ -1160,7 +1160,13 @@ function addFusionButton(viewer) {
     var subToolbar = new Autodesk.Viewing.UI.ControlGroup('myFusionAppGroup');
     subToolbar.addControl(button);
 
-    viewer.toolbar.addControl(subToolbar);
+    if (viewer.toolbar) {
+        viewer.toolbar.addControl(subToolbar);
+    } else {
+        viewer.addEventListener(Autodesk.Viewing.TOOLBAR_CREATED_EVENT, function() {
+            viewer.toolbar.addControl(subToolbar);
+        });
+    }
 }
 
 function loadDocument(viewer, documentId) {
@@ -1175,25 +1181,9 @@ function loadDocument(viewer, documentId) {
         documentId,
         // onLoad
         function (doc) {
-            var geometryItems = [];
-            // Try 3d geometry first
-            geometryItems = Autodesk.Viewing.Document.getSubItemsWithProperties(doc.getRootItem(), {
-                'type': 'geometry',
-                'role': '3d'
-            }, true);
-
-            // If no 3d then try 2d
-            if (geometryItems.length < 1)
-                geometryItems = Autodesk.Viewing.Document.getSubItemsWithProperties(doc.getRootItem(), {
-                    'type': 'geometry',
-                    'role': '2d'
-                }, true);
-
-            if (geometryItems.length > 0) {
-                var path = doc.getViewablePath(geometryItems[0]);
-                //viewer.load(doc.getViewablePath(geometryItems[0]), null, null, null, doc.acmSessionId /*session for DM*/);
-                var options = {};
-                viewer.loadModel(path, options);
+            const node = doc.getRoot().getDefaultGeometry();
+            if (node) {
+                viewer.loadDocumentNode(doc, node);
                 addFusionButton(viewer);
             }
         },
