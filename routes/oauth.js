@@ -100,19 +100,19 @@ router.get('/api/forge/callback/oauth', function (req, res) {
   var tokenSession = new token(req.session);
 
   // first get a full scope token for internal use (server-side)
-  var req = new forgeSDK.AuthClientThreeLegged(config.credentials.client_id, config.credentials.client_secret, config.callbackURL, config.scopeInternal);
+  var req1 = new forgeSDK.AuthClientThreeLegged(config.credentials.client_id, config.credentials.client_secret, config.callbackURL, config.scopeInternal);
   console.log(code);
-  req.getToken(code)
+  req1.getToken(code)
     .then(function (internalCredentials) {
 
       tokenSession.setInternalCredentials(internalCredentials);
-      tokenSession.setInternalOAuth(req);
+      tokenSession.setInternalOAuth(req1);
 
       console.log('Internal token (full scope): ' + internalCredentials.access_token); // debug
 
       // then refresh and get a limited scope token that we can send to the client
       var req2 = new forgeSDK.AuthClientThreeLegged(config.credentials.client_id, config.credentials.client_secret, config.callbackURL, config.scopePublic);
-      req2.refreshToken(internalCredentials)
+      req2.refreshToken(internalCredentials, config.scopePublic)
         .then(function (publicCredentials) {
           tokenSession.setPublicCredentials(publicCredentials);
           tokenSession.setPublicOAuth(req2);
