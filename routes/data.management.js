@@ -246,7 +246,6 @@ router.get('/attachments/:attachment', function (req, res) {
 
 // Delete the specific attachment relationship between two item versions
 router.delete('/attachments/:attachment', function (req, res) {
-
     var tokenSession = new token(req.session);
 
     var href = decodeURIComponent(req.header('wip-href'));
@@ -264,6 +263,50 @@ router.delete('/attachments/:attachment', function (req, res) {
         })
         .catch(function (error) {
             res.status(error.statusCode).end(error.statusMessage);
+        });
+});
+
+// Download a specific attachment of an item version
+router.get('/files/:file', function (req, res) {
+    var tokenSession = new token(req.session);
+
+    var href = decodeURIComponent(req.params.file);
+
+    var params = href.split('/');
+    var projectId = params[params.length - 3];
+    var versionId = params[params.length - 1];
+    var versions = new forgeSDK.VersionsApi();
+
+    // Get version info first to find out the OSS location
+    versions.getVersion(projectId, versionId, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+        .then(function (versionData) {
+            try {
+                var storageId = versionData.body.data.relationships.storage.data.id;
+                console.log('storageId = ' + storageId);
+
+                var displayName = versionData.body.data.attributes.displayName;
+                console.log('displayName = ' + displayName);
+
+                var bucketKeyObjectName = getBucketKeyObjectName(storageId);
+                var objects = new forgeSDK.ObjectsApi();
+                objects.getObject(bucketKeyObjectName.bucketKey, bucketKeyObjectName.objectName, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
+                    .then(function (data) {
+                         //res.set('content-type', 'application/' + fileExt);
+                         res.set('Content-Disposition', 'attachment; filename="' + displayName + '"');
+                         res.end(data.body);
+                    })
+                    .catch(function (error) {
+                        console.log('getObject: failed');
+                        res.status(error.statusCode).end('getObject: failed');
+                    })
+            } catch (error) {
+                res.status(500).end('Could not find storage!');
+            }
+            
+        })
+        .catch(function (error) {
+            console.log('getVersion: failed');
+            res.status(error.statusCode).end('getVersion: failed');
         });
 });
 

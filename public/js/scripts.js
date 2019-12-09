@@ -696,6 +696,15 @@ function downloadAttachment(href, attachmentVersionId) {
     window.open(url,'_blank');
 }
 
+function downloadFile(href) {
+    console.log("downloadFile for href=" + href);
+    // fileName = file name you want to use for download
+    var url = window.location.protocol + "//" + window.location.host +
+        "/dm/files/" + encodeURIComponent(href);
+
+    window.open(url,'_blank');
+}
+
 function deleteAttachment(href, attachmentVersionId) {
     alert("Functionality not available yet");
     return;
@@ -724,7 +733,14 @@ function filesTreeContextMenu(node, callback) {
             data: {href: node.original.href},
             type: 'GET',
             success: function (data) {
-                var menuItems = null;
+                var menuItems = {};
+                menuItems["download"] = {
+                    "label": "Download",
+                    "action": function (obj) {
+                        downloadFile(obj.item.href);
+                    },
+                    "href": node.original.href
+                };
                 data.data.forEach(function (item) {
                     if (item.meta.extension.type === "auxiliary:autodesk.core:Attachment") {
                         var menuItem = {
@@ -758,11 +774,14 @@ function filesTreeContextMenu(node, callback) {
                     }
                 })
 
-                if (!menuItems) {
-                    callback({noItem: {label: "No attachments", action: function () {}}});
-                } else {
-                    callback(menuItems);
-                }
+                if (Object.keys(menuItems).length < 2) {
+                    menuItems["noItem"] = {
+                        "label": "No attachments", 
+                        "action": function () {}
+                    };
+                } 
+                    
+                callback(menuItems);
             }
         });
     }
