@@ -19,6 +19,7 @@
 const express = require('express');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
+var enforce = require('express-sslify');
 
 if (process.env.FORGE_CLIENT_ID == null || process.env.FORGE_CLIENT_SECRET == null) {
   console.warn('*****************\nWARNING: Forge Client ID & Client Secret not defined as environment variables.\n*****************');
@@ -26,6 +27,10 @@ if (process.env.FORGE_CLIENT_ID == null || process.env.FORGE_CLIENT_SECRET == nu
 }
 
 let app = express();
+// Use enforce.HTTPS({ trustProtoHeader: true }) in case you are behind
+// a load balancer (e.g. Heroku). See further comments below
+app.use(enforce.HTTPS({ trustProtoHeader: true }));
+
 app.use(cookieParser());
 app.set('port', process.env.PORT || 3000);
 app.use('/', express.static(__dirname + '/public')); // redirect static calls
