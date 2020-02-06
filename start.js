@@ -32,6 +32,7 @@ let app = express();
 app.use(enforce.HTTPS({ trustProtoHeader: true }));
 
 app.use(cookieParser());
+app.set('trust proxy', 1);
 app.set('port', process.env.PORT || 3000);
 app.use('/', express.static(__dirname + '/public')); // redirect static calls
 app.use('/js', express.static(__dirname + '/../node_modules/bootstrap/dist/js')); // redirect static calls
