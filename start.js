@@ -30,10 +30,12 @@ let app = express();
 app.set('trust proxy', 1);
 // Use enforce.HTTPS({ trustProtoHeader: true }) in case you are behind
 // a load balancer (e.g. Heroku). See further comments below
+/*
 app.use(enforce.HTTPS({ 
   trustProtoHeader: true,
   trustXForwardedHostHeader: true
 }));
+*/
 
 app.use(cookieParser());
 
