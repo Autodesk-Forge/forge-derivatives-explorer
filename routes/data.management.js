@@ -49,13 +49,13 @@ function getFolderId(projectId, versionId, req) {
     });
 }
 
-function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath, req) {
+function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath, isComposite, req) {
     return new Promise(function (_resolve, _reject) {
         // Ask for storage for the new file we want to upload
         var tokenSession = new token(req.session);
 
         var projects = new forgeSDK.ProjectsApi();
-        var body = storageSpecData(fileName, folderId);
+        var body = storageSpecData(fileName, folderId, isComposite);
         projects.postStorage(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
             .then(function (storageData) {
                 var objectId = storageData.body.data.id;
@@ -82,7 +82,7 @@ function uploadFile(projectId, folderId, fileName, fileSize, fileTempPath, req) 
     });
 }
 
-function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
+function createNewItemVersion(projectId, folderId, fileName, objectId, isComposite, req) {
     return new Promise(function (_resolve, _reject) {
 
         var tokenSession = new token(req.session);
@@ -103,7 +103,7 @@ function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
                 if (item) {
                     // We found it so we should create a new version
                     var versions = new forgeSDK.VersionsApi();
-                    var body = versionSpecData(fileName, projectId, item.id, objectId);
+                    var body = versionSpecData(fileName, projectId, item.id, objectId, isComposite);
                     versions.postVersion(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (versionData) {
                             _resolve(versionData.body.data.id);
@@ -116,21 +116,21 @@ function createNewItemVersion(projectId, folderId, fileName, objectId, req) {
                 } else {
                     // We did not find it so we should create it
                     var items = new forgeSDK.ItemsApi();
-                    var body = itemSpecData(fileName, projectId, folderId, objectId);
+                    var body = itemSpecData(fileName, projectId, folderId, objectId, isComposite);
                     items.postItem(projectId, body, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
                         .then(function (itemData) {
                             // Get the versionId out of the reply
                             _resolve(itemData.body.included[0].id);
                         })
                         .catch(function (error) {
-                            console.log('postItem: failed');
+                            console.log('postItem: failed', error);
 
                             _reject(error);
                         });
                 }
             })
             .catch(function (error) {
-                console.log('getFolderContents: failed');
+                console.log('getFolderContents: failed', error);
                 _reject(error);
             });
     });
@@ -148,7 +148,7 @@ function attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId
                 _resolve();
             })
             .catch(function(error) {
-                console.log('postVersionRelationshipsRef: failed');
+                console.log('postVersionRelationshipsRef: failed', error);
                 _reject(error);
             });
     });
@@ -180,7 +180,7 @@ router.get('/attachments', function (req, res) {
                                     _resolve();
                                 })
                                 .catch(function (error) {
-                                    console.log('getVersion: failed');
+                                    console.log('getVersion: failed', error);
                                     _reject(error);
                                 });
                         });
@@ -194,12 +194,12 @@ router.get('/attachments', function (req, res) {
                     res.json(relationshipsData.body);
                 })
                 .catch(function (error) {
-                    console.log('Parallel getVersion: failed');
+                    console.log('Parallel getVersion: failed', error);
                     res.status(error.statusCode).end('Parallel getVersion: failed');
                 })
         })
         .catch(function(error) {
-            console.log('getVersionRelationshipsRef: failed');
+            console.log('getVersionRelationshipsRef: failed', error);
             res.status(error.statusCode).end('getVersionRelationshipsRef: failed');
         });
 });
@@ -239,7 +239,7 @@ router.get('/attachments/:attachment', function (req, res) {
                 })
         })
         .catch(function (error) {
-            console.log('getVersion: failed');
+            console.log('getVersion: failed', error);
             res.status(error.statusCode).end('getVersion: failed');
         });
 });
@@ -296,7 +296,7 @@ router.get('/files/:file', function (req, res) {
                          res.end(data.body);
                     })
                     .catch(function (error) {
-                        console.log('getObject: failed');
+                        console.log('getObject: failed', error);
                         res.status(error.statusCode).end('getObject: failed');
                     })
             } catch (error) {
@@ -305,7 +305,7 @@ router.get('/files/:file', function (req, res) {
             
         })
         .catch(function (error) {
-            console.log('getVersion: failed');
+            console.log('getVersion: failed', error);
             res.status(error.statusCode).end('getVersion: failed');
         });
 });
@@ -324,6 +324,9 @@ router.post('/files', jsonParser, function (req, res) {
     var params = href.split('/');
     var projectId = params[params.length - 3];
     var versionId = params[params.length - 1];
+    var isComposite = false;
+    var folderId = decodeURIComponent(req.header('wip-id'));
+    var isAttachment = req.header('is-attachment') === 'true';
     var uploadedFile;
 
     // Receive the file
@@ -341,7 +344,7 @@ router.post('/files', jsonParser, function (req, res) {
             console.log(field, file);
             uploadedFile = file;
         })
-        .on('end', function () {
+        .on('end', async function () {
             if (uploadedFile.name == '') {
                 res.status(500).end('No file submitted!');
             }
@@ -349,41 +352,57 @@ router.post('/files', jsonParser, function (req, res) {
             console.log('-> file received');
 
             // Create file on A360
+            if (uploadedFile.name.endsWith(".iam.zip") || uploadedFile.name.endsWith(".rvt.zip")) {
+                isComposite = true;
+                uploadedFile.name = uploadedFile.name.slice(0, -4)
+            }
 
             // Get the folder where the selected item is
-            getFolderId(projectId, versionId, req)
-                .then(function (folderId) {
-                    // projectId, folderId, fileName, fileSize, fileTempPath
-                    console.log('uploadFile.size: ' + uploadedFile.size);
-                    console.log('uploadFile.name: ' + uploadedFile.name);
-                    console.log('uploadFile.path: ' + uploadedFile.path);
-                    uploadFile(projectId, folderId, uploadedFile.name, uploadedFile.size, uploadedFile.path, req)
-                        .then(function (objectId) {
-                            createNewItemVersion(projectId, folderId, uploadedFile.name, objectId, req)
-                                .then(function (attachmentVersionId) {
-                                    attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId, req)
-                                        .then(function () {
-                                            res.status(200).json({fileName: uploadedFile.name, objectId: objectId});
-                                        })
-                                        .catch(function (error) {
-                                            console.log('attachVersionToAnotherVersion: failed');
-                                            res.status(error.statusCode).end('attachVersionToAnotherVersion: failed');
-                                        });
-                                })
-                                .catch(function (error) {
-                                    console.log('createNewItemVersion: failed');
-                                    res.status(error.statusCode).end('createNewItemVersion: failed');
-                                });
-                        })
-                        .catch(function (error) {
-                            console.log('uploadFile: failed');
-                            res.status(error.statusCode).end('uploadFile: failed');
-                        });
-                })
-                .catch(function (error) {
-                    console.log('getFolderId: failed');
+            if (isAttachment) {
+                try {
+                    folderId = await getFolderId(projectId, versionId, req)
+                } catch (error) {
+                    console.log('getFolderId: failed', error);
                     res.status(error.statusCode).end('getFolderId: failed');
-                });
+                    return;
+                }
+            }
+
+            try {
+                // projectId, folderId, fileName, fileSize, fileTempPath
+                console.log('uploadFile.size: ' + uploadedFile.size);
+                console.log('uploadFile.name: ' + uploadedFile.name);
+                console.log('uploadFile.path: ' + uploadedFile.path);
+                var objectId = await uploadFile(projectId, folderId, uploadedFile.name, uploadedFile.size, uploadedFile.path, isComposite, req);
+            } catch (error) {
+                console.log('uploadFile: failed', error);
+                res.status(error.statusCode).end('uploadFile: failed');
+                return;
+            }
+
+            try {
+                var attachmentVersionId = await createNewItemVersion(projectId, folderId, uploadedFile.name, objectId, isComposite, req);
+            } catch (error) {
+                console.log('createNewItemVersion: failed', error);
+                let text = 'createNewItemVersion: failed';
+                //if (error.statusBody?.errors?.[0]) {
+                    //text = error.statusBody?.errors?[0];
+                //}
+                res.status(error.statusCode).end('createNewItemVersion: failed');
+                return;
+            }
+               
+            if (isAttachment) {
+                try {
+                    await attachVersionToAnotherVersion(projectId, versionId, attachmentVersionId, req);
+                } catch (error) {
+                    console.log('attachVersionToAnotherVersion: failed', error);
+                    res.status(error.statusCode).end('attachVersionToAnotherVersion: failed');
+                    return;
+                }
+            }
+
+            res.status(200).json({fileName: uploadedFile.name, objectId: objectId});
         });
 
     form.parse(req);
@@ -434,7 +453,7 @@ function storageSpecData(fileName, folderId) {
 }
 
 // added included >> attributes >> extension on 2017-02-22
-function itemSpecData(fileName, projectId, folderId, objectId) {
+function itemSpecData(fileName, projectId, folderId, objectId, isComposite) {
     var itemsType = projectId.startsWith("a.") ? "items:autodesk.core:File" : "items:autodesk.bim360:File";
     var versionsType = projectId.startsWith("a.") ? "versions:autodesk.core:File" : "versions:autodesk.bim360:File";
     var itemSpec = {
@@ -486,10 +505,19 @@ function itemSpecData(fileName, projectId, folderId, objectId) {
         }]
     };
 
-    if (fileName.endsWith(".iam.zip")) {
-        itemSpec.data[0].attributes.extension.type = "versions:autodesk.a360:CompositeDesign";
-        itemSpec.data[0].attributes.name = fileName.slice(0, -4);
-        itemSpec.included[0].attributes.name = fileName.slice(0, -4);
+    if (isComposite) {
+        itemSpec.data.attributes.extension.type = projectId.startsWith("a.") ? "items:autodesk.core:File" : "items:autodesk.bim360:C4RModel";
+        itemSpec.included[0].attributes.extension.type = projectId.startsWith("a.") ? "versions:autodesk.a360:CompositeDesign" : "versions:autodesk.bim360:C4RModel";
+        if (!projectId.startsWith("a.")) {
+            itemSpec.included[0].attributes.extension.data = {
+                "isCompositeDesign": true,
+                "compositeParentFile": fileName
+            } 
+        } else {
+            itemSpec.included[0].attributes.extension.data = {
+                "parentFile": `${fileName}/${fileName}`
+            } 
+        }
     }
 
     console.log(itemSpec);
@@ -497,7 +525,7 @@ function itemSpecData(fileName, projectId, folderId, objectId) {
     return itemSpec;
 }
 
-function versionSpecData(fileName, projectId, itemId, objectId) {
+function versionSpecData(fileName, projectId, itemId, objectId, isComposite) {
     var versionsType = projectId.startsWith("a.") ? "versions:autodesk.core:File" : "versions:autodesk.bim360:File";
 
     var versionSpec = {
@@ -530,9 +558,18 @@ function versionSpecData(fileName, projectId, itemId, objectId) {
         }
     }
 
-    if (fileName.endsWith(".iam.zip")) {
-        versionSpec.data.attributes.extension.type = "versions:autodesk.a360:CompositeDesign";
-        versionSpec.data.attributes.name = fileName.slice(0, -4);
+    if (isComposite) {
+        versionSpec.data.attributes.extension.type = projectId.startsWith("a.") ? "versions:autodesk.a360:CompositeDesign" : "versions:autodesk.bim360:C4RModel";
+        if (!projectId.startsWith("a.")) {
+            versionSpec.data.attributes.extension.data = {
+                "isCompositeDesign": true,
+                "compositeParentFile": fileName
+            } 
+        } else {
+            versionSpec.data.attributes.extension.data = {
+                "parentFile": `${fileName}/${fileName}`
+            } 
+        }
     }
 
     console.log(versionSpec);
@@ -612,28 +649,6 @@ router.get('/treeNode', function (req, res) {
                 var projects = new forgeSDK.ProjectsApi();
 
                 // resourceId contains project_id
-
-              /*
-                projects.getProject(hubId, resourceId, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
-                    .then(function (project) {
-                        var rootFolderId = project.body.data.relationships.rootFolder.data.id;
-                        var folders = new forgeSDK.FoldersApi();
-                        folders.getFolderContents(resourceId, rootFolderId, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
-                            .then(function (folderContents) {
-                                res.json(makeTree(folderContents.body.data, true));
-                            })
-                            .catch(function (error) {
-                                console.log(error);
-                            });
-
-
-
-                    })
-                    .catch(function (error) {
-                        console.log(error);
-                    });
-
-              */
 
                 // Work with top folders instead
                 var projects = new forgeSDK.ProjectsApi();

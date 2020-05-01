@@ -12,6 +12,10 @@ $(document).ready(function () {
         evt.target.value = "";
     });
 
+    $("#refreshTree").click(function (evt) {
+        $("#forgeFiles").jstree(true).refresh()
+    });
+
     $("#forgeUploadHidden").change(function(evt) {
 
         showProgress("Uploading file... ", "inprogress");
@@ -21,7 +25,12 @@ $(document).ready(function () {
         $.ajax ({
             url: '/dm/files',
             type: 'POST',
-            headers: { 'x-file-name': fileName, 'wip-href': MyVars.selectedNode.original.href },
+            headers: { 
+                'x-file-name': fileName, 
+                'wip-href': MyVars.selectedNode.original.href, 
+                'wip-id': MyVars.selectedNode.original.wipid,  
+                'is-attachment': MyVars.isAttachment 
+            },
             data: data,
             cache: false,
             processData: false, // Don't process the files
@@ -31,7 +40,7 @@ $(document).ready(function () {
             console.log('Uploaded file "' + data.fileName + '" with urn = ' + data.objectId);
 
             // Refresh file tree
-            //$('#forgeFiles').jstree("refresh");
+            $('#forgeFiles').jstree("refresh");
 
             showProgress("Upload successful", "success");
         }).fail (function (xhr, ajaxOptions, thrownError) {
@@ -40,10 +49,18 @@ $(document).ready(function () {
         }) ;
     });
 
-    var upload = $("#uploadFile").click(function(evt) {
+    $("#uploadFile").click(function(evt) {
         evt.preventDefault();
+        MyVars.isAttachment = true;
         $("#forgeUploadHidden").trigger("click");
     });
+
+    $("#uploadFile2").click(function(evt) {
+        evt.preventDefault();
+        MyVars.isAttachment = false;
+        $("#forgeUploadHidden").trigger("click");
+    });
+
 
     // Get the tokens
     get3LegToken(function(token) {
@@ -393,20 +410,23 @@ function getManifest(urn, onsuccess) {
     });
 }
 
-function delManifest(urn, onsuccess) {
+function delManifest(urn, onsuccess, onerror) {
     console.log("delManifest for urn=" + urn);
     $.ajax({
         url: '/md/manifests/' + urn,
         type: 'DELETE'
     }).done(function (data) {
         console.log(data);
-        if (data.status === 'success') {
+        if (data.result === 'success') {
             if (onsuccess !== undefined) {
                 onsuccess(data);
             }
         }
     }).fail(function(err) {
         console.log('DELETE /api/manifest call failed\n' + err.statusText);
+        if (onerror !== undefined) {
+            onerror(err)
+        }
     });
 }
 
@@ -520,7 +540,11 @@ function fillFormats() {
 
             cleanupViewer();
 
-            delManifest(urn, function() { });
+            delManifest(urn, function() { 
+                showProgress("Manifest deleted", "success")
+            }, function() {
+                showProgress("Failed to delete manifest", "failed")
+            });
         });
     });
 }
@@ -622,12 +646,19 @@ function prepareFilesTree() {
         $("#forgeFormats").attr('disabled', 'disabled');
         $("#downloadExport").attr('disabled', 'disabled');
 
+        if (data.node.type === 'folders') {
+            $("#uploadFile2").removeAttr('disabled');
+        } else {
+            $("#uploadFile2").attr('disabled', 'disabled');
+        }
+
+        MyVars.selectedNode = data.node;
+
         if (data.node.type === 'versions') {
             $("#deleteManifest").removeAttr('disabled');
             $("#uploadFile").removeAttr('disabled');
 
             MyVars.keepTrying = true;
-            MyVars.selectedNode = data.node;
 
             // Clear hierarchy tree
             $('#forgeHierarchy').empty().jstree('destroy');
@@ -1077,6 +1108,9 @@ function initializeViewer(urn) {
 
     console.log("Launching Autodesk Viewer for: " + urn);
 
+
+    
+
     var options = {
         document: 'urn:' + urn,
         env: 'AutodeskProduction',
@@ -1088,7 +1122,7 @@ function initializeViewer(urn) {
     } else {
         var viewerElement = document.getElementById('forgeViewer');
         var config = {
-            extensions: ['Autodesk.Viewing.WebVR', 'Autodesk.Viewing.MarkupsGui'],
+            extensions: ['Autodesk.Viewing.WebVR', 'Autodesk.Viewing.MarkupsGui', 'Autodesk.AEC.LevelsExtension'],
             experimental: ['webVR_orbitModel']
         };
         MyVars.viewer = new Autodesk.Viewing.Private.GuiViewer3D(viewerElement, config);
