@@ -351,10 +351,14 @@ router.post('/files', jsonParser, function (req, res) {
 
             console.log('-> file received');
 
+            var isA360 = projectId.startsWith("a.");
+
             // Create file on A360
             if (uploadedFile.name.endsWith(".iam.zip") || uploadedFile.name.endsWith(".rvt.zip")) {
                 isComposite = true;
-                uploadedFile.name = uploadedFile.name.slice(0, -4)
+                if (isA360) {
+                    uploadedFile.name = uploadedFile.name.slice(0, -4)
+                }
             }
 
             // Get the folder where the selected item is
@@ -506,14 +510,17 @@ function itemSpecData(fileName, projectId, folderId, objectId, isComposite) {
     };
 
     if (isComposite) {
-        itemSpec.data.attributes.extension.type = projectId.startsWith("a.") ? "items:autodesk.core:File" : "items:autodesk.bim360:C4RModel";
-        itemSpec.included[0].attributes.extension.type = projectId.startsWith("a.") ? "versions:autodesk.a360:CompositeDesign" : "versions:autodesk.bim360:C4RModel";
+        // Cannot use C4RModel the API is restricted for Revit doing it
+        //itemSpec.data.attributes.extension.type = projectId.startsWith("a.") ? "items:autodesk.core:File" : "items:autodesk.bim360:C4RModel";
+        itemSpec.included[0].attributes.extension.type = projectId.startsWith("a.") ? "versions:autodesk.a360:CompositeDesign" : "versions:autodesk.bim360:File"; //"versions:autodesk.bim360:C4RModel";
         if (!projectId.startsWith("a.")) {
-            itemSpec.included[0].attributes.extension.data = {
-                "isCompositeDesign": true,
-                "compositeParentFile": fileName
-            } 
+            // BIM 360
+            //itemSpec.included[0].attributes.extension.data = {
+            //    "isCompositeDesign": true,
+            //    "compositeParentFile": fileName
+            //} 
         } else {
+            // A360
             itemSpec.included[0].attributes.extension.data = {
                 "parentFile": `${fileName}/${fileName}`
             } 
@@ -559,13 +566,16 @@ function versionSpecData(fileName, projectId, itemId, objectId, isComposite) {
     }
 
     if (isComposite) {
-        versionSpec.data.attributes.extension.type = projectId.startsWith("a.") ? "versions:autodesk.a360:CompositeDesign" : "versions:autodesk.bim360:C4RModel";
+        // Cannot use C4RModel the API is restricted for Revit doing it
+        versionSpec.data.attributes.extension.type = projectId.startsWith("a.") ? "versions:autodesk.a360:CompositeDesign" : "versions:autodesk.bim360:File"; //"versions:autodesk.bim360:C4RModel";
         if (!projectId.startsWith("a.")) {
-            versionSpec.data.attributes.extension.data = {
-                "isCompositeDesign": true,
-                "compositeParentFile": fileName
-            } 
+            // BIM 360
+            //versionSpec.data.attributes.extension.data = {
+            //    "isCompositeDesign": true,
+            //    "compositeParentFile": fileName
+            //} 
         } else {
+            // A360
             versionSpec.data.attributes.extension.data = {
                 "parentFile": `${fileName}/${fileName}`
             } 

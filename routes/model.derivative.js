@@ -166,11 +166,25 @@ router.post('/export', jsonParser, function (req, res) {
         item.advanced = req.body.advanced;
     }
 
-    var input = (req.body.fileExtType && req.body.fileExtType === 'versions:autodesk.a360:CompositeDesign' ? {
+    let isComposite = (req.body.fileExtType && req.body.fileExtType === 'versions:autodesk.a360:CompositeDesign');
+
+    var rootFilename = req.body.rootFileName
+    if (rootFilename.endsWith(".zip")) {
+        rootFilename = rootFilename.slice(0, -4)
+        isComposite = true
+    }
+    
+    var input = (isComposite) ? {
         "urn": req.body.urn,
-        "rootFilename": req.body.rootFileName,
+        //"checkReferences": true
+        "rootFilename": rootFilename,
         "compressedUrn": true
-    } : {"urn": req.body.urn});
+    } : {
+        "urn": req.body.urn
+    };
+    
+
+    //var input = {"urn": req.body.urn};
     var output = {
         "destination": {
             "region": "us"
@@ -184,6 +198,8 @@ router.post('/export', jsonParser, function (req, res) {
 
     if (!derivatives)
         return;
+
+    console.log("input", input);    
 
     derivatives.translate({"input": input, "output": output}, {}, tokenSession.getInternalOAuth(), tokenSession.getInternalCredentials())
         .then(function (data) {
