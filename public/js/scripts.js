@@ -642,6 +642,8 @@ function prepareFilesTree() {
         // Clean up previous instance
         cleanupViewer();
 
+        console.log("Selected item's ID/URN: " + data.node.original.wipid);
+
         // Disable the hierarchy related controls for the time being
         $("#forgeFormats").attr('disabled', 'disabled');
         $("#downloadExport").attr('disabled', 'disabled');
